@@ -69,10 +69,11 @@ public class MainActivity extends Activity {
             mExtController = sRuntime.getWebExtensionController();
             mExtController.setPromptDelegate(new WebExtensionController.PromptDelegate() {
                 @Override
-                public GeckoResult<AllowOrDeny> onInstallPromptRequest(
+                public GeckoResult<WebExtension.PermissionPromptResponse> onInstallPromptRequest(
                         WebExtension extension, String[] permissions, String[] origins,
                         String[] dataCollectionPermissions) {
-                    return GeckoResult.allow();
+                    return GeckoResult.fromValue(
+                            new WebExtension.PermissionPromptResponse(true, null, null));
                 }
 
                 @Override
