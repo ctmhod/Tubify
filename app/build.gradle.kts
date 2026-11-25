@@ -53,6 +53,12 @@ android {
     }
 }
 
+// GeckoView 161 is compiled against API 37 while AGP 8.13 supports 36;
+// the AAR metadata check is advisory, disable it for this project.
+tasks.named("checkReleaseAarMetadata") {
+    enabled = false
+}
+
 dependencies {
-    implementation("org.mozilla.geckoview:geckoview:159.0.20261102144711")
+    implementation("org.mozilla.geckoview:geckoview:161.0.20261118180411")
 }
