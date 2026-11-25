@@ -68,17 +68,19 @@ jobs:
           test -f out/Tubify-v0.1.0-arm64-v8a.apk
           test -f out/Tubify-v0.1.0-armeabi-v7a.apk
 
-      - name: Verify APK contents (diagnostic)
+      - name: Verify APK contents
         run: |
+          set -e
           for a in out/*.apk; do
             echo "== $a =="
-            unzip -l "$a" | grep -iE 'mipmap|ic_launcher' || echo "NO-MIPMAP-ENTRIES"
-            for pat in 'assets/tweaks/manifest.json' 'assets/tweaks/content.js'; do
-              unzip -l "$a" | grep -q "$pat" && echo "PASS $pat" || echo "FAIL $pat"
-            done
-            for pat in 'addons.mozilla.org/firefox/downloads/latest/ublock-origin' 'tweaks@tubify.app' 'm.youtube.com'; do
-              unzip -p "$a" classes.dex | strings | grep -q "$pat" && echo "PASS $pat" || echo "FAIL $pat"
-            done
+            unzip -l "$a" | grep -q 'assets/tweaks/manifest.json'
+            unzip -l "$a" | grep -q 'assets/tweaks/content.js'
+            # AGP resource shrinking renames res paths; icon reference lives in resources.arsc
+            unzip -p "$a" resources.arsc | strings | grep -q 'ic_launcher'
+            unzip -p "$a" classes.dex | strings | grep -q 'addons.mozilla.org/firefox/downloads/latest/ublock-origin'
+            unzip -p "$a" classes.dex | strings | grep -q 'tweaks@tubify.app'
+            unzip -p "$a" classes.dex | strings | grep -q 'm.youtube.com'
+            unzip -p "$a" assets/tweaks/manifest.json | grep -q 'tweaks@tubify.app'
             du -h "$a"
           done
 
