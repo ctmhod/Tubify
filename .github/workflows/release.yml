@@ -73,6 +73,7 @@ jobs:
           set -e
           for a in out/*.apk; do
             echo "== $a =="
+            unzip -l "$a" | head -40
             unzip -l "$a" | grep -q 'assets/tweaks/manifest.json'
             unzip -l "$a" | grep -q 'assets/tweaks/content.js'
             unzip -l "$a" | grep -qE 'mipmap-xxxhdpi(-v4)?/ic_launcher.png'
