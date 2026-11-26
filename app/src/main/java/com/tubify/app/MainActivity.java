@@ -28,6 +28,7 @@ import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoSessionSettings;
 import org.mozilla.geckoview.GeckoView;
 import org.mozilla.geckoview.WebExtension;
+import org.mozilla.geckoview.WebRequestError;
 import org.mozilla.geckoview.WebExtensionController;
 
 public class MainActivity extends Activity {
@@ -52,6 +53,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ErrLog.init(this);
         mPrefs = getSharedPreferences("tubify", MODE_PRIVATE);
         applyImmersive();
 
@@ -128,6 +130,14 @@ public class MainActivity extends Activity {
             public void onCanGoBack(GeckoSession session, boolean canGoBack) {
                 mCanGoBack = canGoBack;
             }
+
+            @Override
+            public GeckoResult<String> onLoadError(GeckoSession session, String uri,
+                    WebRequestError error) {
+                ErrLog.log("page", "load error "
+                        + (error != null ? error.category + "/" + error.code : "") + " " + uri);
+                return null;
+            }
         });
 
         mSession.setProgressDelegate(new GeckoSession.ProgressDelegate() {
@@ -195,6 +205,25 @@ public class MainActivity extends Activity {
         sheet.addView(settingRow(dialog, "Hide comments", null,
                 mPrefs.getBoolean("comments", false),
                 (checked) -> setTweak("comments", checked)));
+
+        sheet.addView(sectionLabel("DEVELOPER"));
+        TextView errRow = new TextView(this);
+        errRow.setText("Error log");
+        errRow.setTextColor(Color.WHITE);
+        errRow.setTextSize(16);
+        GradientDrawable errBg = new GradientDrawable();
+        errBg.setColor(0xFF2A2A2A);
+        errBg.setCornerRadius(dp(14));
+        errRow.setBackground(errBg);
+        errRow.setPadding(dp(16), dp(12), dp(12), dp(12));
+        LinearLayout.LayoutParams elp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        elp.bottomMargin = dp(8);
+        sheet.addView(errRow, elp);
+        errRow.setOnClickListener(v -> {
+            dialog.dismiss();
+            showErrorLog();
+        });
 
         sheet.addView(sectionLabel("DIAGNOSTICS"));
         TextView diag = new TextView(this);
@@ -329,6 +358,8 @@ public class MainActivity extends Activity {
                             String type = ((JSONObject) message).optString("type");
                             if ("open-settings".equals(type)) {
                                 runOnUiThread(() -> showSettings());
+                            } else if ("log".equals(type)) {
+                                ErrLog.log("ext", ((JSONObject) message).optString("msg"));
                             } else if ("tweaks-ready".equals(type)) {
                                 String v = ((JSONObject) message).optString("version");
                                 mPrefs.edit().putString("diag_tweaks",
@@ -359,6 +390,7 @@ public class MainActivity extends Activity {
             android.util.Log.e("Tubify", "tweaks install failed", error);
             String msg = error != null && error.getMessage() != null ? error.getMessage() : "unknown";
             mPrefs.edit().putString("diag_tweaks", "failed: " + msg).apply();
+            ErrLog.log("tweaks", "install failed: " + msg);
         });
     }
 
@@ -405,6 +437,7 @@ public class MainActivity extends Activity {
                                         ? error.getMessage() : "unknown";
                                 mPrefs.edit().putString("diag_ubo",
                                         "install failed: " + msg + " - retries on next start").apply();
+                                ErrLog.log("ublock", "install failed: " + msg);
                             });
                 } else if (want) {
                     mPrefs.edit().putString("diag_ubo", "install pending - retries on next start").apply();
@@ -423,6 +456,83 @@ public class MainActivity extends Activity {
                 mPrefs.edit().putString("diag_ubo", want ? "active" : "off").apply();
             }
         });
+    }
+
+    private void showErrorLog() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable boxBg = new GradientDrawable();
+        boxBg.setColor(0xFF1B1B1B);
+        boxBg.setCornerRadius(dp(20));
+        box.setBackground(boxBg);
+        box.setPadding(dp(16), dp(14), dp(16), dp(8));
+
+        TextView title = new TextView(this);
+        title.setText("Error log");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(17);
+        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        box.addView(title);
+
+        TextView body = new TextView(this);
+        body.setText(ErrLog.read());
+        body.setTextColor(0xFFCCCCCC);
+        body.setTextSize(11);
+        body.setTypeface(android.graphics.Typeface.MONOSPACE);
+        body.setTextIsSelectable(true);
+        body.setPadding(0, dp(8), 0, dp(8));
+        android.widget.ScrollView sv = new android.widget.ScrollView(this);
+        sv.addView(body);
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        box.addView(sv, slp);
+
+        LinearLayout btns = new LinearLayout(this);
+        btns.setOrientation(LinearLayout.HORIZONTAL);
+        btns.setGravity(Gravity.END);
+        TextView copy = logButton("Copy");
+        TextView clear = logButton("Clear");
+        TextView close = logButton("Close");
+        copy.setOnClickListener(v -> {
+            android.content.ClipboardManager cm =
+                    (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            cm.setPrimaryClip(android.content.ClipData.newPlainText(
+                    "Tubify error log", ErrLog.read()));
+            android.widget.Toast.makeText(this, "Error log copied",
+                    android.widget.Toast.LENGTH_SHORT).show();
+        });
+        clear.setOnClickListener(v -> {
+            ErrLog.clear();
+            body.setText(ErrLog.read());
+        });
+        close.setOnClickListener(v -> dialog.dismiss());
+        btns.addView(copy);
+        btns.addView(clear);
+        btns.addView(close);
+        box.addView(btns);
+
+        dialog.setContentView(box);
+        Window w = dialog.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.92f);
+            int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.7f);
+            w.setLayout(width, height);
+        }
+        dialog.show();
+    }
+
+    private TextView logButton(String text) {
+        TextView b = new TextView(this);
+        b.setText(text);
+        b.setTextColor(0xFFFF4444);
+        b.setTextSize(14);
+        b.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        b.setPadding(dp(14), dp(10), dp(6), dp(4));
+        return b;
     }
 
     private String buildDiagnostics() {
