@@ -211,6 +211,14 @@ public class MainActivity extends Activity {
                 if (uri == null || !uri.startsWith("http")) {
                     return null;
                 }
+                // Only genuine network failures get Tubify's page; certificate,
+                // content and other categories keep Gecko's own error page so a
+                // healthy page is never replaced by a false error.
+                if (error == null || error.category != WebRequestError.ERROR_CATEGORY_NETWORK) {
+                    return null;
+                }
+                String detail = ("network error " + error.code)
+                        .replace("<", "").replace(">", "");
                 String html = "<!doctype html><meta name=viewport content='width=device-width'>"
                         + "<body style='margin:0;background:" + hex(COL_BASE) + ";color:" + hex(COL_TEXT) + ";"
                         + "font-family:sans-serif;display:flex;flex-direction:column;"
@@ -220,6 +228,8 @@ public class MainActivity extends Activity {
                         + "Couldn't load YouTube</div>"
                         + "<div style='color:" + hex(COL_TEXT2) + ";font-size:14px;margin-bottom:28px'>"
                         + "Check your connection and try again.</div>"
+                        + "<div style='color:" + hex(COL_TEXT2) + ";font-size:11px;margin:-18px 24px 24px'>"
+                        + detail + "</div>"
                         + "<a href='" + uri.replace("'", "%27") + "' style='background:" + hex(COL_CARD) + ";"
                         + "border:1px solid " + hex(COL_BORDER) + ";color:" + hex(COL_TEXT) + ";padding:14px 42px;"
                         + "border-radius:28px;text-decoration:none;font-size:16px'>Retry</a>"
