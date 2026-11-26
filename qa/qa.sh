@@ -2,6 +2,7 @@
 # usage: qa.sh PKG NEW_APK OLD_APK OUTDIR WAIT
 PKG=$1; NEW=$2; OLD=$3; OUT=$4; W=$5
 mkdir -p "$OUT"; R="$OUT/report.txt"; : > "$R"
+adb(){ timeout 60 /usr/bin/env adb "$@"; }
 log(){ echo "$*" | tee -a "$R"; }
 shot(){ timeout 60 adb shell screencap -p /sdcard/s.png; timeout 60 adb pull /sdcard/s.png "$OUT/$1.png" >/dev/null 2>&1 || true; }
 dump(){ timeout 60 adb shell uiautomator dump /sdcard/u.xml >/dev/null 2>&1; adb pull /sdcard/u.xml "$OUT/$1.xml" >/dev/null 2>&1 || true; }
@@ -71,4 +72,14 @@ adb shell svc wifi disable; adb shell svc data disable; sleep 3
 adb shell am force-stop $PKG; adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null; sleep $W
 shot 14-offline; fatal offline
 adb shell svc wifi enable; adb shell svc data enable; sleep 3
+
+log "== 9 YouTube flows (deep links)"
+yt(){ adb shell am force-stop $PKG; adb logcat -c; adb shell am start -a android.intent.action.VIEW -d "$2" $PKG >/dev/null 2>&1 || adb shell am start -a android.intent.action.VIEW -d "$2" -p $PKG >/dev/null 2>&1; sleep $W; shot "$1"; adb logcat -d > "$OUT/logcat-$1.txt"; if adb shell pidof $PKG | grep -q .; then log "PASS $1 app alive"; else log "FAIL $1 app not running"; fi; fatal "$1"; }
+yt 20-search "https://m.youtube.com/results?search_query=music"
+yt 21-watch "https://m.youtube.com/watch?v=jNQXAC9IVRw"
+yt 22-playlist "https://m.youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI"
+yt 23-subscriptions "https://m.youtube.com/feed/subscriptions"
+yt 24-signin "https://accounts.google.com/ServiceLogin?service=youtube"
+yt 25-shorts-link "https://m.youtube.com/shorts/aqz-KE-bpKQ"
+yt 26-channel "https://m.youtube.com/@YouTube"
 log "DONE"
