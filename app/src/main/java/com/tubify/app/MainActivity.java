@@ -58,6 +58,7 @@ public class MainActivity extends Activity {
 
     private GeckoView mView;
     private GeckoSession mSession;
+    private View mProgress;
     private SharedPreferences mPrefs;
     private WebExtensionController mExtController;
     private WebExtension.Port mTweaksPort;
@@ -77,6 +78,12 @@ public class MainActivity extends Activity {
         root.addView(mView, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
+        mProgress = new View(this);
+        GradientDrawable progressBg = new GradientDrawable();
+        progressBg.setColor(COL_ACCENT);
+        mProgress.setBackground(progressBg);
+        mProgress.setVisibility(View.GONE);
+        root.addView(mProgress, new FrameLayout.LayoutParams(0, dp(3)));
         setContentView(root);
 
         if (sRuntime == null) {
@@ -170,6 +177,19 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStart(GeckoSession session, String url) {
                 mPageLoaded = false;
+            }
+
+            @Override
+            public void onProgressChange(GeckoSession session, int progress) {
+                if (progress >= 100) {
+                    mProgress.setVisibility(View.GONE);
+                    return;
+                }
+                mProgress.setVisibility(View.VISIBLE);
+                ViewGroup.LayoutParams lp = mProgress.getLayoutParams();
+                lp.width = (int) (getResources().getDisplayMetrics().widthPixels
+                        * Math.max(progress, 5) / 100f);
+                mProgress.setLayoutParams(lp);
             }
 
             @Override
