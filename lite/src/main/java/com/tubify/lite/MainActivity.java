@@ -128,6 +128,11 @@ public class MainActivity extends Activity {
         mPrefs = getSharedPreferences("tubify_lite", MODE_PRIVATE);
         String forcedTheme = getIntent().getStringExtra("tubify_theme");
         if (forcedTheme != null) mPrefs.edit().putString("theme", forcedTheme).apply();
+        for (String k : new String[]{"shorts", "suggestions", "comments", "home", "adblock"}) {
+            if (getIntent().hasExtra("tubify_" + k)) {
+                mPrefs.edit().putBoolean(k, getIntent().getBooleanExtra("tubify_" + k, false)).apply();
+            }
+        }
         resolveTheme();
         applyImmersive();
 
@@ -439,10 +444,9 @@ public class MainActivity extends Activity {
         StringBuilder css = new StringBuilder();
         if (shorts) css.append(
                 "a[href^=\"/shorts\"],a[href*=\"youtube.com/shorts\"],"
-                + "ytm-reel-shelf-renderer,ytm-rich-shelf-renderer,"
+                + "ytm-reel-shelf-renderer,"
                 + "ytm-shorts-lockup-view-model,ytm-shorts-lockup-view-model-v2,"
-                + "ytm-select-with-timeline-renderer,"
-                + "ytd-reel-shelf-renderer,ytd-rich-shelf-renderer,ytd-reel-video-renderer"
+                                + "ytd-reel-shelf-renderer,ytd-reel-video-renderer"
                 + "{display:none!important}");;
         if (suggestions) css.append(
                 "ytm-watch-next-secondary-results-renderer,ytm-related-chip-cloud-renderer,"
@@ -454,6 +458,8 @@ public class MainActivity extends Activity {
                 + ".tubify-home ytm-single-column-browse-results-renderer{display:none!important}");
         if (comments) css.append(
                 "ytm-comment-section-renderer,ytm-comments-entry-point-header-renderer,"
+                + "comments-entry-point-teaser-view-model,yt-video-metadata-carousel-view-model,"
+                + "yt-comment-teaser-carousel-item-view-model,[section-identifier*=\"comment\"],"
                 + "ytm-item-section-renderer[section-identifier=\"comments-entry-point\"],"
                 + "ytm-engagement-panel-section-list-renderer[target-id*=\"comments-section\"],"
                 + "ytd-comments,#comments{display:none!important}");
@@ -476,26 +482,36 @@ public class MainActivity extends Activity {
                 + "if(!e){e=document.createElement('style');e.id='tubify-tweaks';"
                 + "(document.head||document.documentElement).appendChild(e);}"
                 + "e.textContent=" + jsString(css.toString()) + ";})();";
-        // Structural Shorts hider: CSS :has() is unsupported on WebView < 105,
-        // so hide via JS instead (works on every WebView). Cleanup runs first so
-        // turning the toggle off restores the elements.
-        js += "(function(){document.querySelectorAll('[data-tubify-shorts]').forEach("
-                + "function(el){el.style.display='';el.removeAttribute('data-tubify-shorts');});})();";
-        if (shorts) js += "(function(){var kill=function(){var p=0,n=0;"
+        // Structural Shorts hider (CSS :has() is unsupported on WebView < 105).
+        // One persistent observer reads the live config, so turning the toggle
+        // off restores everything and never leaves a stale hider running.
+        js += "window.__tubifyCfg={shorts:" + shorts + "};"
+                + "(function(){var SEL='a[href*=\"/shorts\"],ytm-shorts-lockup-view-model,"
+                + "ytm-shorts-lockup-view-model-v2';"
+                + "var restore=function(){document.querySelectorAll('[data-tubify-shorts]').forEach("
+                + "function(el){el.style.display='';el.removeAttribute('data-tubify-shorts');});};"
+                + "var hide=function(el){el.style.display='none';el.setAttribute('data-tubify-shorts','1');};"
+                + "var kill=function(){if(!window.__tubifyCfg.shorts){restore();return;}"
+                + "var p=0,n=0;"
                 + "document.querySelectorAll('ytm-pivot-bar-item-renderer').forEach(function(el){"
-                + "if(el.querySelector('a[href*=\"/shorts\"],.pivot-shorts')){el.style.display='none';"
-                + "el.setAttribute('data-tubify-shorts','1');p++;}});"
-                + "document.querySelectorAll('ytm-tab-renderer,ytd-tab-renderer,ytm-video-with-context-renderer,"
-                + "ytd-video-renderer,ytm-rich-item-renderer,ytd-rich-item-renderer,ytm-rich-section-renderer')"
-                + ".forEach(function(el){if(el.querySelector('a[href*=\"/shorts\"],ytm-shorts-lockup-view-model,"
-                + "ytm-shorts-lockup-view-model-v2')){el.style.display='none';"
-                + "el.setAttribute('data-tubify-shorts','1');n++;}});"
-                + "if(p>0&&p!==window.__tubifyP){window.__tubifyP=p;"
+                + "if(el.querySelector('a[href*=\"/shorts\"],.pivot-shorts')){hide(el);p++;}});"
+                // Only single video cells, never feed containers.
+                + "document.querySelectorAll('ytm-video-with-context-renderer,ytd-video-renderer,"
+                + "ytm-rich-item-renderer,ytd-rich-item-renderer,ytm-compact-video-renderer').forEach(function(el){"
+                + "if(el.querySelector(SEL)){hide(el);n++;}});"
+                // Shelves are hidden only when titled Shorts.
+                + "document.querySelectorAll('ytm-rich-section-renderer,ytm-item-section-renderer,"
+                + "ytm-shelf-renderer,ytm-rich-shelf-renderer').forEach(function(el){"
+                + "var h=el.querySelector('h2,.shelf-title,.rich-shelf-title,ytm-shelf-header-renderer');"
+                + "if(h&&/^\\s*shorts\\s*$/i.test(h.textContent||'')){hide(el);n++;}});"
+                + "if(p!==window.__tubifyP){window.__tubifyP=p;"
                 + "console.log('TUBIFY_TWEAK shorts pivot='+p+' items='+n);}};"
                 + "var pending=false;var sched=function(){if(pending)return;pending=true;"
                 + "setTimeout(function(){pending=false;kill();},300);};"
-                + "kill();if(!window.__tubifyMO){window.__tubifyMO=new MutationObserver(sched);"
-                + "window.__tubifyMO.observe(document.documentElement,{childList:true,subtree:true});}})();";
+                + "window.__tubifyKill=kill;"
+                + "if(!window.__tubifyMO){window.__tubifyMO=new MutationObserver(sched);"
+                + "window.__tubifyMO.observe(document.documentElement,{childList:true,subtree:true});}"
+                + "kill();})();";
         mWeb.evaluateJavascript(js, null);
     }
 
