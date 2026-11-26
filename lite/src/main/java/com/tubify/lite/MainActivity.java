@@ -38,7 +38,7 @@ public class MainActivity extends Activity {
     private static final int COL_BORDER = 0xFF20232E;
     private static final int COL_TEXT = 0xFFE8EAF0;
     private static final int COL_TEXT2 = 0xFF8A90A0;
-    private static final int COL_ACCENT = COL_ACCENT;
+    private static final int COL_ACCENT = 0xFFFF4444;
 
 
     private static final String HOME = "https://m.youtube.com";
