@@ -6,7 +6,7 @@
 // injected stylesheet survives in-page navigation. Also injects the Tubify
 // gear button into the YouTube header, right after the logo.
 
-const DEFAULTS = { shorts: true, suggestions: true, comments: false };
+const DEFAULTS = { shorts: true, suggestions: true, comments: false, home: false };
 
 const GEAR_CSS =
   "#tubify-gear{display:inline-flex;align-items:center;justify-content:center;" +
@@ -49,6 +49,12 @@ const CSS = {
     "ytd-watch-next-secondary-results-renderer",
     "#related"
   ].join(", ") + " { display: none !important; }",
+  home: [
+    ".tubify-home ytm-rich-grid-renderer",
+    ".tubify-home ytm-rich-section-renderer",
+    ".tubify-home ytm-single-column-browse-results-renderer",
+    "ytd-browse[page-subtype='home'] ytd-rich-grid-renderer"
+  ].join(", ") + " { display: none !important; }",
   comments: [
     "ytm-comment-section-renderer",
     "ytm-comments-entry-point-header-renderer",
@@ -58,6 +64,17 @@ const CSS = {
 };
 
 let styleEl = null;
+let lastSettings = null;
+let lastPath = null;
+
+// Page-scoped marker class: some tweaks (home feed) must only apply on "/".
+function updatePathClass() {
+  const path = location.pathname;
+  if (path === lastPath) return;
+  lastPath = path;
+  document.documentElement.classList.toggle("tubify-home", path === "/");
+  if (lastSettings) apply(lastSettings);
+}
 
 function apply(settings) {
   let css = "";
@@ -78,12 +95,14 @@ try {
 } catch (e) {}
 
 browser.storage.local.get("settings").then((res) => {
-  apply(Object.assign({}, DEFAULTS, res.settings || {}));
+  lastSettings = Object.assign({}, DEFAULTS, res.settings || {});
+  apply(lastSettings);
 });
 
 browser.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.settings) {
-    apply(Object.assign({}, DEFAULTS, changes.settings.newValue || {}));
+    lastSettings = Object.assign({}, DEFAULTS, changes.settings.newValue || {});
+    apply(lastSettings);
   }
 });
 
@@ -146,8 +165,10 @@ function sweepOpenApp() {
   }
 }
 
+updatePathClass();
 insertGear();
 new MutationObserver(() => {
   if (!document.getElementById(GEAR_ID)) insertGear();
   sweepOpenApp();
+  updatePathClass();
 }).observe(document.documentElement, { childList: true, subtree: true });
