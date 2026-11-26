@@ -90,4 +90,9 @@ ytx 32-home-dark "https://m.youtube.com/" -e tubify_theme dark
 ytx 33-watch-dark "https://m.youtube.com/watch?v=jNQXAC9IVRw"
 ytx 34-home-light "https://m.youtube.com/" -e tubify_theme light
 ytx 35-watch-light "https://m.youtube.com/watch?v=jNQXAC9IVRw"
+log "== 11 toggle states on real pages"
+ytx 40-watch-comments-hidden "https://m.youtube.com/watch?v=jNQXAC9IVRw" --ez tubify_comments true
+ytx 41-watch-comments-shown "https://m.youtube.com/watch?v=jNQXAC9IVRw" --ez tubify_comments false
+ytx 42-search-shorts-on "https://m.youtube.com/results?search_query=music" --ez tubify_shorts true
+ytx 43-search-shorts-off "https://m.youtube.com/results?search_query=music" --ez tubify_shorts false
 log "DONE"
