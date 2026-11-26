@@ -60,21 +60,21 @@ jobs:
           mkdir -p out
           for f in app/build/outputs/apk/release/*.apk; do
             case "$f" in
-              *universal-release.apk) cp "$f" out/Tubify-v0.1.15-0-universal.apk ;;
-              *arm64-v8a-release.apk) cp "$f" out/Tubify-v0.1.15-arm64-v8a.apk ;;
-              *armeabi-v7a-release.apk) cp "$f" out/Tubify-v0.1.15-armeabi-v7a.apk ;;
-              *x86_64-release.apk) cp "$f" out/Tubify-v0.1.15-x86_64.apk ;;
+              *universal-release.apk) cp "$f" out/Tubify-v0.1.16-0-universal.apk ;;
+              *arm64-v8a-release.apk) cp "$f" out/Tubify-v0.1.16-arm64-v8a.apk ;;
+              *armeabi-v7a-release.apk) cp "$f" out/Tubify-v0.1.16-armeabi-v7a.apk ;;
+              *x86_64-release.apk) cp "$f" out/Tubify-v0.1.16-x86_64.apk ;;
             esac
           done
           ls -l out
-          for n in 0-universal arm64-v8a armeabi-v7a x86_64; do test -f "out/Tubify-v0.1.15-$n.apk"; done
-          cp lite/build/outputs/apk/release/lite-release.apk out/Tubify-Lite-v0.1.15.apk
-          test -f out/Tubify-Lite-v0.1.15.apk
+          for n in 0-universal arm64-v8a armeabi-v7a x86_64; do test -f "out/Tubify-v0.1.16-$n.apk"; done
+          cp lite/build/outputs/apk/release/lite-release.apk out/Tubify-Lite-v0.1.16.apk
+          test -f out/Tubify-Lite-v0.1.16.apk
 
       - name: Verify APK contents
         run: |
           set -e
-          for a in out/Tubify-v0.1.15-*.apk; do
+          for a in out/Tubify-v0.1.16-*.apk; do
             echo "== $a =="
             unzip -l "$a" | grep -q 'assets/tweaks/manifest.json'
             unzip -l "$a" | grep -q 'assets/tweaks/content.js'
@@ -88,8 +88,8 @@ jobs:
             unzip -p "$a" assets/tweaks/background.js | grep -q 'insertCSS'
             du -h "$a"
           done
-          echo "== out/Tubify-Lite-v0.1.15.apk =="
-          L=out/Tubify-Lite-v0.1.15.apk
+          echo "== out/Tubify-Lite-v0.1.16.apk =="
+          L=out/Tubify-Lite-v0.1.16.apk
           stat -c%s "$L"
           unzip -l "$L"
           test $(stat -c%s "$L") -lt 1000000
@@ -109,13 +109,13 @@ jobs:
             aapt dump badging "$a" | grep -E "^(package|sdkVersion|targetSdkVersion|native-code):" | head -6
           done
 
-      - name: Publish release v0.1.15
+      - name: Publish release v0.1.16
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd out
           SIZES=""
           for f in *.apk; do SIZES="$SIZES $f: $(du -h "$f" | cut -f1)."; done
-          NOTES="Tubify v0.1.15: the settings sheet now links to the project on GitHub (source code, releases, issue reporting) and adds a Developer row that opens the developer on Telegram (@ctmhod). Everything else matches v0.1.15: universal-first packaging (start with Tubify-v0.1.15-0-universal.apk), branded dark error page with Retry, Material 3 dark UI, Unhook-style toggles (Shorts, suggestions, comments, home feed), three blockers in Full, layered Lite blocking, development error log. Signed with the permanent Tubify release key. Sizes:$SIZES Tubify-Lite is the tiny WebView build (<1MB)."
-          gh release view v0.1.15 >/dev/null 2>&1 && gh release delete v0.1.15 --yes || true
-          gh release create v0.1.15 --title "Tubify v0.1.15" --notes "$NOTES" --latest *.apk
+          NOTES="Tubify v0.1.16: minimum Android version is now Android 10 (API 29) for both builds. Everything else matches v0.1.15: settings links to the project on GitHub plus the Developer row (Telegram @ctmhod), universal-first packaging (start with Tubify-v0.1.16-0-universal.apk), branded dark error page with Retry, Material 3 dark UI, Unhook-style toggles (Shorts, suggestions, comments, home feed), three blockers in Full, layered Lite blocking, development error log. Signed with the permanent Tubify release key. Requires Android 10+. Sizes:$SIZES Tubify-Lite is the tiny WebView build (<1MB)."
+          gh release view v0.1.16 >/dev/null 2>&1 && gh release delete v0.1.16 --yes || true
+          gh release create v0.1.16 --title "Tubify v0.1.16" --notes "$NOTES" --latest *.apk
