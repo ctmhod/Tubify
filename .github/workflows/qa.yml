@@ -1,0 +1,55 @@
+name: Tubify QA
+on:
+  workflow_dispatch:
+    inputs:
+      new_tag:
+        description: Release tag to test
+        default: v0.1.26
+      old_tag:
+        description: Older release tag for the upgrade test
+        default: v0.1.24
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: lite, pkg: com.tubify.lite, wait: 15 }
+          - { name: full, pkg: com.tubify.app, wait: 60 }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Download APKs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir apks
+          if [ "${{ matrix.name }}" = lite ]; then
+            gh release download ${{ inputs.new_tag }} -p 'Tubify-Lite-*.apk' -D apks/new
+            gh release download ${{ inputs.old_tag }} -p 'Tubify-Lite-*.apk' -D apks/old
+          else
+            gh release download ${{ inputs.new_tag }} -p '*-x86_64.apk' -D apks/new
+            gh release download ${{ inputs.old_tag }} -p '*-x86_64.apk' -D apks/old
+          fi
+          ls -l apks/*
+      - name: QA walkthrough
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          target: google_apis
+          arch: x86_64
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 3072
+          disable-animations: true
+          script: bash qa/qa.sh ${{ matrix.pkg }} "$(ls apks/new/*.apk | head -1)" "$(ls apks/old/*.apk | head -1)" qa-out-${{ matrix.name }} ${{ matrix.wait }}
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-${{ matrix.name }}
+          path: qa-out-${{ matrix.name }}
