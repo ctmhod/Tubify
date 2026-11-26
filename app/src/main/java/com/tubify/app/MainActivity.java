@@ -47,6 +47,7 @@ public class MainActivity extends Activity {
     private WebExtension.Port mTweaksPort;
     private WebExtension mUbo;
     private boolean mCanGoBack;
+    private boolean mPageLoaded;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,6 +130,18 @@ public class MainActivity extends Activity {
             }
         });
 
+        mSession.setProgressDelegate(new GeckoSession.ProgressDelegate() {
+            @Override
+            public void onPageStart(GeckoSession session, String url) {
+                mPageLoaded = false;
+            }
+
+            @Override
+            public void onPageStop(GeckoSession session, boolean success) {
+                mPageLoaded = true;
+            }
+        });
+
         mSession.open(sRuntime);
         mView.setSession(mSession);
         mView.coverUntilFirstPaint(Color.BLACK);
@@ -182,6 +195,14 @@ public class MainActivity extends Activity {
         sheet.addView(settingRow(dialog, "Hide comments", null,
                 mPrefs.getBoolean("comments", false),
                 (checked) -> setTweak("comments", checked)));
+
+        sheet.addView(sectionLabel("DIAGNOSTICS"));
+        TextView diag = new TextView(this);
+        diag.setText(buildDiagnostics());
+        diag.setTextColor(0xFF9E9E9E);
+        diag.setTextSize(12);
+        diag.setPadding(dp(4), 0, dp(4), dp(4));
+        sheet.addView(diag);
 
         TextView done = new TextView(this);
         done.setText("Done");
@@ -282,36 +303,63 @@ public class MainActivity extends Activity {
     // --- Extension plumbing -------------------------------------------------
 
     private void installTweaks() {
+        mPrefs.edit()
+                .putString("diag_tweaks", "installing")
+                .putBoolean("diag_bridge", false)
+                .apply();
         mExtController.ensureBuiltIn(TWEAKS_URI, TWEAKS_ID).accept(extension -> {
             if (extension == null) {
+                mPrefs.edit().putString("diag_tweaks", "failed: no extension returned").apply();
                 return;
             }
+            final String bundledVer = extension.metaData != null && extension.metaData.version != null
+                    ? extension.metaData.version : "?";
+            mPrefs.edit().putString("diag_tweaks", "installed v" + bundledVer).apply();
             extension.setMessageDelegate(new WebExtension.MessageDelegate() {
                 @Override
                 public void onConnect(WebExtension.Port port) {
                     mTweaksPort = port;
+                    mPrefs.edit().putBoolean("diag_bridge", true).apply();
                     port.setDelegate(new WebExtension.PortDelegate() {
                         @Override
                         public void onPortMessage(Object message, WebExtension.Port p) {
-                            if (message instanceof JSONObject
-                                    && "open-settings".equals(
-                                            ((JSONObject) message).optString("type"))) {
-                                runOnUiThread(() -> showSettings());
+                            if (!(message instanceof JSONObject)) {
+                                return;
                             }
+                            String type = ((JSONObject) message).optString("type");
+                            if ("open-settings".equals(type)) {
+                                runOnUiThread(() -> showSettings());
+                            } else if ("tweaks-ready".equals(type)) {
+                                String v = ((JSONObject) message).optString("version");
+                                mPrefs.edit().putString("diag_tweaks",
+                                        "active v" + (v.isEmpty() ? bundledVer : v)).apply();
+                            }
+                        }
+
+                        @Override
+                        public void onDisconnect(WebExtension.Port p) {
+                            if (p == mTweaksPort) {
+                                mTweaksPort = null;
+                            }
+                            mPrefs.edit().putBoolean("diag_bridge", false).apply();
                         }
                     });
                     sendTweaksSettings();
                 }
             }, "browser");
-            // On the very first run the page can load before the extension is
-            // active; reload once so the content script and CSS apply.
-            if (!mPrefs.getBoolean("tweaks_first_reload", false)) {
+            // The page can finish loading before the extension is active (not
+            // only on the very first run); reload once so the content script
+            // and its CSS actually apply to the loaded page.
+            if (mSession != null
+                    && (mPageLoaded || !mPrefs.getBoolean("tweaks_first_reload", false))) {
                 mPrefs.edit().putBoolean("tweaks_first_reload", true).apply();
-                if (mSession != null) {
-                    mSession.reload();
-                }
+                mSession.reload();
             }
-        }, error -> android.util.Log.e("Tubify", "tweaks install failed", error));
+        }, error -> {
+            android.util.Log.e("Tubify", "tweaks install failed", error);
+            String msg = error != null && error.getMessage() != null ? error.getMessage() : "unknown";
+            mPrefs.edit().putString("diag_tweaks", "failed: " + msg).apply();
+        });
     }
 
     private void sendTweaksSettings() {
@@ -330,6 +378,9 @@ public class MainActivity extends Activity {
 
     private void syncUbo() {
         final boolean want = mPrefs.getBoolean("adblock", true);
+        if (!want) {
+            mPrefs.edit().putString("diag_ubo", "off").apply();
+        }
         mExtController.list().accept(extensions -> {
             WebExtension found = null;
             if (extensions != null) {
@@ -342,9 +393,21 @@ public class MainActivity extends Activity {
             }
             if (found == null) {
                 if (want && !mPrefs.getBoolean("ubo", false)) {
+                    mPrefs.edit().putString("diag_ubo", "installing").apply();
                     mExtController.install(UBO_XPI).accept(
-                            installed -> mPrefs.edit().putBoolean("ubo", true).apply(),
-                            error -> android.util.Log.e("Tubify", "uBlock install failed", error));
+                            installed -> mPrefs.edit()
+                                    .putBoolean("ubo", true)
+                                    .putString("diag_ubo", "active")
+                                    .apply(),
+                            error -> {
+                                android.util.Log.e("Tubify", "uBlock install failed", error);
+                                String msg = error != null && error.getMessage() != null
+                                        ? error.getMessage() : "unknown";
+                                mPrefs.edit().putString("diag_ubo",
+                                        "install failed: " + msg + " - retries on next start").apply();
+                            });
+                } else if (want) {
+                    mPrefs.edit().putString("diag_ubo", "install pending - retries on next start").apply();
                 }
                 return;
             }
@@ -352,10 +415,23 @@ public class MainActivity extends Activity {
             boolean enabled = mUbo.metaData != null && mUbo.metaData.enabled;
             if (want && !enabled) {
                 mExtController.enable(mUbo, WebExtensionController.EnableSource.USER);
+                mPrefs.edit().putString("diag_ubo", "active").apply();
             } else if (!want && enabled) {
                 mExtController.disable(mUbo, WebExtensionController.EnableSource.USER);
+                mPrefs.edit().putString("diag_ubo", "off").apply();
+            } else {
+                mPrefs.edit().putString("diag_ubo", want ? "active" : "off").apply();
             }
         });
+    }
+
+    private String buildDiagnostics() {
+        String tweaks = mPrefs.getString("diag_tweaks", "not installed yet");
+        boolean bridge = mPrefs.getBoolean("diag_bridge", false);
+        String ubo = mPrefs.getString("diag_ubo", "not installed yet");
+        return "Tweaks extension: " + tweaks + "\n"
+                + "App bridge: " + (bridge ? "connected" : "not connected") + "\n"
+                + "uBlock Origin: " + ubo;
     }
 
     private void applyImmersive() {
