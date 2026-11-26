@@ -100,9 +100,9 @@ final class ErrLog {
 
     private static String redact(String s) {
         String r = s;
-        r = r.replaceAll("(https?://[^/?\s]+)[?#][^\s]*", "$1?...");
-        r = r.replaceAll("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", "[email]");
-        r = r.replaceAll("(?i)(cookie|authorization|session|password)=\S+", "$1=[redacted]");
+        r = r.replaceAll("(https?://[^/?\\s]+)[?#][^\\s]*", "$1?...");
+        r = r.replaceAll("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}", "[email]");
+        r = r.replaceAll("(?i)(cookie|authorization|session|password)=\\S+", "$1=[redacted]");
         r = r.replaceAll("[A-Za-z0-9_-]{32,}", "[token]");
         return r;
     }
