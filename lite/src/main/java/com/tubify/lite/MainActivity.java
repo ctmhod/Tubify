@@ -547,7 +547,9 @@ public class MainActivity extends Activity {
                 + "b.addEventListener('click',function(ev){"
                 + "ev.preventDefault();ev.stopPropagation();"
                 + "try{Tubify.openSettings();}catch(e){}});"
-                + "logo.parentNode.insertBefore(b,logo.nextSibling);}"
+                + "logo.parentNode.insertBefore(b,logo.nextSibling);"
+                // The gear may sit inside the zoomed logo container: pin it to 28px.
+                + "var gw=b.getBoundingClientRect().width;if(gw>28.5){b.style.zoom=String(28/gw);}}"
                 + "ins();"
                 + "var LP=null;"
                 + "function pc(){var p=location.pathname;if(p===LP)return;LP=p;"
