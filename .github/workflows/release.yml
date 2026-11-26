@@ -193,5 +193,3 @@ jobs:
           gh release view v0.1.26 >/dev/null 2>&1 && gh release delete v0.1.26 --yes || true
           gh release create v0.1.26 --title "Tubify v0.1.26" --notes "$NOTES" --latest *.apk
           cd ..
-          [ -s "smoke-full/shot-full.png" ] && gh release upload v0.1.26 "smoke-full/shot-full.png#Tubify-v0.1.26-Full-emulator-Android10.png" || echo "no full screenshot"
-          [ -s "smoke-lite/shot-lite.png" ] && gh release upload v0.1.26 "smoke-lite/shot-lite.png#Tubify-v0.1.26-Lite-emulator-Android10.png" || echo "no lite screenshot"
