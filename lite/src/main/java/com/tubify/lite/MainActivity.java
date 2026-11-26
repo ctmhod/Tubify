@@ -414,7 +414,7 @@ public class MainActivity extends Activity {
         float sheetR = dp(28);
         sheetBg.setCornerRadii(new float[]{sheetR, sheetR, sheetR, sheetR, 0, 0, 0, 0});
         sheet.setBackground(sheetBg);
-        sheet.setPadding(dp(20), dp(10), dp(20), dp(16));
+        sheet.setPadding(dp(20), dp(10), dp(20), dp(28));
         View handle = new View(this);
         GradientDrawable handleBg = new GradientDrawable();
         handleBg.setColor(COL_BORDER);
@@ -425,13 +425,20 @@ public class MainActivity extends Activity {
         hlp.bottomMargin = dp(14);
         sheet.addView(handle, hlp);
 
-
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        scroll.addView(content, new android.widget.ScrollView.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        sheet.addView(scroll, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        
         TextView title = new TextView(this);
         title.setText("Tubify Lite settings");
         title.setTextColor(COL_TEXT);
         title.setTextSize(19);
         title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        sheet.addView(title);
+        content.addView(title);
 
         TextView subtitle = new TextView(this);
         String ver = "";
@@ -443,28 +450,30 @@ public class MainActivity extends Activity {
         subtitle.setTextColor(COL_TEXT2);
         subtitle.setTextSize(13);
         subtitle.setPadding(0, dp(2), 0, dp(14));
-        sheet.addView(subtitle);
+        content.addView(subtitle);
 
-        sheet.addView(sectionLabel("BLOCKING"));
-        sheet.addView(settingRow("Ad blocking", "Blocks ad requests, skips video ads",
+        content.addView(sectionLabel("BLOCKING"));
+        content.addView(settingRow("Ad blocking", "Blocks ad requests, skips video ads",
                 mPrefs.getBoolean("adblock", true), (checked) ->
                     mPrefs.edit().putBoolean("adblock", checked).apply()));
 
-        sheet.addView(sectionLabel("INTERFACE"));
-        sheet.addView(settingRow("Hide Shorts", null,
+        content.addView(sectionLabel("INTERFACE"));
+        content.addView(settingRow("Hide Shorts", null,
                 mPrefs.getBoolean("shorts", true),
                 (checked) -> setTweak("shorts", checked)));
-        sheet.addView(settingRow("Hide suggestions", null,
+        content.addView(settingRow("Hide suggestions", null,
                 mPrefs.getBoolean("suggestions", true),
                 (checked) -> setTweak("suggestions", checked)));
-        sheet.addView(settingRow("Hide comments", null,
+        content.addView(settingRow("Hide comments", null,
                 mPrefs.getBoolean("comments", false),
                 (checked) -> setTweak("comments", checked)));
-        sheet.addView(settingRow("Hide home feed", "Start on a blank home",
+        content.addView(settingRow("Hide home feed", "Start on a blank home",
                 mPrefs.getBoolean("home", false),
                 (checked) -> setTweak("home", checked)));
 
-        sheet.addView(sectionLabel("DEVELOPER"));
+        content.addView(sectionLabel("DEVELOPER"));
+        content.addView(linkRow(dialog, "Source code", "github.com/ctmhod/Tubify", "https://github.com/ctmhod/Tubify"));
+        content.addView(linkRow(dialog, "Developer", "@ctmhod on Telegram", "https://t.me/ctmhod"));
         TextView errRow = new TextView(this);
         errRow.setText("Error log");
         errRow.setTextColor(COL_TEXT);
@@ -478,18 +487,15 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams elp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         elp.bottomMargin = dp(8);
-        sheet.addView(errRow, elp);
+        content.addView(errRow, elp);
         errRow.setOnClickListener(v -> {
             dialog.dismiss();
             showErrorLog();
         });
+        content.addView(linkRow(dialog, "Releases", "Latest APKs", "https://github.com/ctmhod/Tubify/releases"));
+        content.addView(linkRow(dialog, "Report an issue", "github.com/ctmhod/Tubify/issues", "https://github.com/ctmhod/Tubify/issues"));
 
-        sheet.addView(linkRow(dialog, "Developer", "@ctmhod on Telegram", "https://t.me/ctmhod"));
-        sheet.addView(linkRow(dialog, "Source code", "github.com/ctmhod/Tubify", "https://github.com/ctmhod/Tubify"));
-        sheet.addView(linkRow(dialog, "Releases", "Latest APKs", "https://github.com/ctmhod/Tubify/releases"));
-        sheet.addView(linkRow(dialog, "Report an issue", "github.com/ctmhod/Tubify/issues", "https://github.com/ctmhod/Tubify/issues"));
-
-        TextView done = new TextView(this);
+                TextView done = new TextView(this);
         done.setText("Done");
         done.setTextColor(COL_ACCENT);
         done.setTextSize(15);
@@ -500,7 +506,7 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         dlp.gravity = Gravity.END;
         dlp.topMargin = dp(6);
-        sheet.addView(done, dlp);
+        content.addView(done, dlp);
         done.setOnClickListener(v -> dialog.dismiss());
 
         dialog.setContentView(sheet);
@@ -599,40 +605,6 @@ public class MainActivity extends Activity {
         b.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         b.setPadding(dp(14), dp(10), dp(6), dp(4));
         return b;
-    }
-
-
-    private void logPreviousExits() {
-        // Native/child-process crashes bypass the Java crash handler; on the
-        // next launch, ApplicationExitInfo (API 30+) still tells us what died.
-        if (android.os.Build.VERSION.SDK_INT < 30) {
-            return;
-        }
-        try {
-            android.app.ActivityManager am =
-                    (android.app.ActivityManager) getSystemService(ACTIVITY_SERVICE);
-            java.util.List<android.app.ApplicationExitInfo> exits =
-                    am.getHistoricalProcessExitReasons(getPackageName(), 0, 5);
-            for (android.app.ApplicationExitInfo info : exits) {
-                ErrLog.log("exit", "reason=" + info.getReason() + " status="
-                        + info.getStatus() + " process=" + info.getProcessName()
-                        + " importance=" + info.getImportance()
-                        + (info.getDescription() != null ? " desc=" + info.getDescription() : ""));
-                try {
-                    java.io.InputStream trace = info.getTraceInputStream();
-                    if (trace != null) {
-                        byte[] buf = new byte[700];
-                        int n = trace.read(buf);
-                        trace.close();
-                        if (n > 0) {
-                            ErrLog.log("trace", new String(buf, 0, n, "UTF-8"));
-                        }
-                    }
-                } catch (Throwable ignored) {
-                }
-            }
-        } catch (Throwable ignored) {
-        }
     }
 
     private void setTweak(String key, boolean checked) {
