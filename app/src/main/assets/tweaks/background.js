@@ -8,6 +8,15 @@
 
 const DEFAULTS = { shorts: true, suggestions: true, comments: false };
 
+// Styles for the Tubify gear button that the content script injects into the
+// YouTube header next to the logo.
+const GEAR_CSS =
+  "#tubify-gear{display:inline-flex;align-items:center;justify-content:center;" +
+  "width:36px;height:36px;margin-left:8px;padding:0;border:none;border-radius:50%;" +
+  "background:rgba(40,40,40,0.9);color:#fff;font-size:20px;line-height:1;" +
+  "vertical-align:middle;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}" +
+  "#tubify-gear:active{background:rgba(90,90,90,0.9);}";
+
 const CSS = {
   shorts: [
     'a[href^="/shorts"]',
@@ -46,7 +55,7 @@ function cssFor(s) {
   for (const key of Object.keys(CSS)) {
     if (s[key]) css += CSS[key] + "\n";
   }
-  return css;
+  return css + GEAR_CSS;
 }
 
 function isYouTube(url) {
@@ -98,23 +107,30 @@ browser.storage.local.get("settings").then((res) => {
   applyToAllYouTubeTabs();
 });
 
-// Content script asks to be (re)styled as early as possible.
-browser.runtime.onMessage.addListener((msg, sender) => {
-  if (msg && msg.type === "tubify-apply" && sender.tab) {
-    applied.delete(sender.tab.id);
-    applyToTab(sender.tab.id);
-  }
-});
-
 // Live settings bridge from the Android app.
 function relay(msg) {
   if (msg && typeof msg === "object") {
     browser.storage.local.set({ settings: msg });
   }
 }
+let nativePort = null;
 try {
-  const port = browser.runtime.connectNative("browser");
-  port.onMessage.addListener(relay);
+  nativePort = browser.runtime.connectNative("browser");
+  nativePort.onMessage.addListener(relay);
 } catch (e) {
   // App side not connected yet; storage still carries the last settings.
 }
+
+// Content script asks to be (re)styled as early as possible, and forwards
+// gear-button taps to the Android app so it can open the settings sheet.
+browser.runtime.onMessage.addListener((msg, sender) => {
+  if (msg && msg.type === "tubify-apply" && sender.tab) {
+    applied.delete(sender.tab.id);
+    applyToTab(sender.tab.id);
+  }
+  if (msg && msg.type === "tubify-open-settings" && nativePort) {
+    try {
+      nativePort.postMessage({ type: "open-settings" });
+    } catch (e) {}
+  }
+});
