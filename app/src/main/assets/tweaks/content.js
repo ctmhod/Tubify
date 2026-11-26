@@ -77,6 +77,23 @@ browser.storage.onChanged.addListener((changes, area) => {
   }
 });
 
+// Forward this extension's JS errors (not page errors) to the app error log
+// via the background script.
+window.addEventListener("error", (e) => {
+  if (e.filename && e.filename.indexOf("moz-extension://") === 0) {
+    try {
+      browser.runtime.sendMessage({ type: "tubify-log",
+        msg: e.message + " @" + e.filename.split("/").pop() + ":" + e.lineno });
+    } catch (err) {}
+  }
+});
+window.addEventListener("unhandledrejection", (e) => {
+  try {
+    browser.runtime.sendMessage({ type: "tubify-log",
+      msg: "promise: " + ((e.reason && e.reason.message) || e.reason) });
+  } catch (err) {}
+});
+
 // --- Tubify gear button next to the YouTube logo ---
 
 const GEAR_ID = "tubify-gear";
