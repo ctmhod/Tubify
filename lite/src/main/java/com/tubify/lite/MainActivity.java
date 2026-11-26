@@ -33,12 +33,37 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
     // Tubify design tokens (Material 3 dark), colors from the launcher icon.
-    private static final int COL_BASE = 0xFF07080D;
-    private static final int COL_CARD = 0xFF12141C;
-    private static final int COL_BORDER = 0xFF20232E;
-    private static final int COL_TEXT = 0xFFE8EAF0;
-    private static final int COL_TEXT2 = 0xFF8A90A0;
-    private static final int COL_ACCENT = 0xFFFF4444;
+    // Theme palettes (base, card, border, text, text2, accent). Dark is the
+    // Tubify classic look; Light is Tubify's own light palette. Accent is the
+    // Tubify red in both.
+    private static final int[] PALETTE_DARK = {0xFF07080D, 0xFF12141C, 0xFF20232E,
+            0xFFE8EAF0, 0xFF8A90A0, 0xFFFF4444};
+    private static final int[] PALETTE_LIGHT = {0xFFFAFAFC, 0xFFFFFFFF, 0xFFE2E4EC,
+            0xFF14161D, 0xFF5A6072, 0xFFFF4444};
+    private int COL_BASE, COL_CARD, COL_BORDER, COL_TEXT, COL_TEXT2, COL_ACCENT;
+
+    private boolean isDark() {
+        String t = mPrefs.getString("theme", "auto");
+        if (t.equals("dark")) return true;
+        if (t.equals("light")) return false;
+        return (getResources().getConfiguration().uiMode
+                & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+    }
+
+    private void resolveTheme() {
+        int[] p = isDark() ? PALETTE_DARK : PALETTE_LIGHT;
+        COL_BASE = p[0];
+        COL_CARD = p[1];
+        COL_BORDER = p[2];
+        COL_TEXT = p[3];
+        COL_TEXT2 = p[4];
+        COL_ACCENT = p[5];
+    }
+
+    private static String hex(int c) {
+        return String.format("#%06X", c & 0xFFFFFF);
+    }
 
 
     private static final String HOME = "https://m.youtube.com";
@@ -74,6 +99,9 @@ public class MainActivity extends Activity {
         ErrLog.init(this);
         logPreviousExits();
         mPrefs = getSharedPreferences("tubify_lite", MODE_PRIVATE);
+        String forcedTheme = getIntent().getStringExtra("tubify_theme");
+        if (forcedTheme != null) mPrefs.edit().putString("theme", forcedTheme).apply();
+        resolveTheme();
         applyImmersive();
 
         FrameLayout root = new FrameLayout(this);
@@ -81,6 +109,9 @@ public class MainActivity extends Activity {
         root.addView(mWeb, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(root);
+        if (getIntent().getBooleanExtra("tubify_open_settings", false)) {
+            root.postDelayed(() -> showSettings(), 4000);
+        }
 
         WebSettings s = mWeb.getSettings();
         s.setJavaScriptEnabled(true);
@@ -529,6 +560,7 @@ public class MainActivity extends Activity {
                     mPrefs.edit().putBoolean("adblock", checked).apply()));
 
         content.addView(sectionLabel("INTERFACE"));
+        content.addView(themeRow(dialog));
         content.addView(settingRow("Hide Shorts", null,
                 mPrefs.getBoolean("shorts", true),
                 (checked) -> setTweak("shorts", checked)));
@@ -684,6 +716,80 @@ public class MainActivity extends Activity {
         injectAdSkipper();
     }
 
+
+    private View themeRow(final Dialog dialog) {
+        String cur = mPrefs.getString("theme", "auto");
+        String sub = cur.equals("dark") ? "Dark"
+                : cur.equals("light") ? "Light" : "Auto (follow system)";
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(COL_CARD);
+        bg.setCornerRadius(dp(16));
+        bg.setStroke(dp(1), COL_BORDER);
+        row.setBackground(bg);
+        row.setPadding(dp(16), dp(12), dp(12), dp(12));
+        TextView t = new TextView(this);
+        t.setText("Theme");
+        t.setTextColor(COL_TEXT);
+        t.setTextSize(16);
+        row.addView(t);
+        TextView s = new TextView(this);
+        s.setText(sub);
+        s.setTextColor(COL_TEXT2);
+        s.setTextSize(12);
+        s.setPadding(0, dp(2), 0, 0);
+        row.addView(s);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.bottomMargin = dp(8);
+        row.setLayoutParams(lp);
+        row.setOnClickListener(v -> showThemeChooser(dialog));
+        return row;
+    }
+
+    private void showThemeChooser(final Dialog settingsDialog) {
+        final Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable boxBg = new GradientDrawable();
+        boxBg.setColor(COL_BASE);
+        boxBg.setCornerRadius(dp(16));
+        box.setBackground(boxBg);
+        box.setPadding(dp(20), dp(14), dp(20), dp(14));
+        TextView title = new TextView(this);
+        title.setText("Theme");
+        title.setTextColor(COL_TEXT);
+        title.setTextSize(17);
+        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        title.setPadding(0, 0, 0, dp(6));
+        box.addView(title);
+        final String[] keys = {"auto", "dark", "light"};
+        final String[] names = {"Auto (follow system)", "Dark", "Light"};
+        for (int i = 0; i < keys.length; i++) {
+            final int idx = i;
+            TextView opt = new TextView(this);
+            opt.setText(names[i]);
+            opt.setTextColor(COL_TEXT);
+            opt.setTextSize(15);
+            opt.setPadding(dp(8), dp(10), dp(8), dp(10));
+            box.addView(opt);
+            opt.setOnClickListener(v -> {
+                mPrefs.edit().putString("theme", keys[idx]).apply();
+                resolveTheme();
+                dialog.dismiss();
+                settingsDialog.dismiss();
+                showSettings();
+            });
+        }
+        dialog.setContentView(box);
+        Window w = dialog.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+        dialog.show();
+    }
 
     private View linkRow(Dialog dialog, String title, String subtitle, String url) {
         LinearLayout row = new LinearLayout(this);
