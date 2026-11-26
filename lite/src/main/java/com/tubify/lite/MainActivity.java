@@ -168,9 +168,17 @@ public class MainActivity extends Activity {
         @Override
         public void onReceivedError(WebView view, WebResourceRequest request,
                 android.webkit.WebResourceError error) {
-            if (error != null) {
-                ErrLog.log("page", "load error " + error.getErrorCode() + " "
-                        + error.getDescription() + " " + request.getUrl());
+            if (error != null && request.getUrl() != null) {
+                String u = request.getUrl().toString().toLowerCase(Locale.US);
+                boolean adNoise = false;
+                for (String p : AD_PATTERNS) {
+                    if (u.contains(p)) { adNoise = true; break; }
+                }
+                if (!adNoise) {
+                    String tag = u.contains("googlevideo.com") ? "media" : "page";
+                    ErrLog.log(tag, "load error " + error.getErrorCode() + " "
+                            + error.getDescription() + " " + request.getUrl());
+                }
             }
             if (request.isForMainFrame() && !isFinishing()) {
                 new android.app.AlertDialog.Builder(MainActivity.this)
