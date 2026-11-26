@@ -53,4 +53,6 @@ Requires Android 10 (API 29) or newer.
 
 ## Build
 
+Every release is smoke-tested on an Android 10 (API 29) emulator in CI before publishing: install, launch, crash check, screenshot.
+
 Releases are built by GitHub Actions (`.github/workflows/release.yml`) straight from this source tree and signed with the Tubify release key stored in CI secrets. Old-release icon refreshes use `.github/workflows/reicon.yml`, which swaps icon pixels inside the published APKs and re-signs them with the same key, without deleting or recreating any release.
