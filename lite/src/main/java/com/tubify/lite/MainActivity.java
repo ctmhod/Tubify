@@ -283,19 +283,11 @@ public class MainActivity extends Activity {
         StringBuilder css = new StringBuilder();
         if (shorts) css.append(
                 "a[href^=\"/shorts\"],a[href*=\"youtube.com/shorts\"],"
-                + "ytm-pivot-bar-item-renderer:has(a[href*=\"/shorts\"]),"
-                + "ytm-pivot-bar-item-renderer:has(.pivot-shorts),"
                 + "ytm-reel-shelf-renderer,ytm-rich-shelf-renderer,"
                 + "ytm-shorts-lockup-view-model,ytm-shorts-lockup-view-model-v2,"
                 + "ytm-select-with-timeline-renderer,"
-                + "ytm-rich-section-renderer:has(ytm-shorts-lockup-view-model),"
-                + "ytm-rich-item-renderer:has(ytm-shorts-lockup-view-model),"
-                + "ytm-video-with-context-renderer:has(a[href*=\"/shorts\"]),"
-                + "ytm-tab-renderer:has(a[href*=\"/shorts\"]),"
-                + "ytd-reel-shelf-renderer,ytd-rich-shelf-renderer,ytd-reel-video-renderer,"
-                + "ytd-rich-item-renderer:has(a[href*=\"/shorts\"]),"
-                + "ytd-tab-renderer:has(a[href*=\"/shorts\"])"
-                + "{display:none!important}");
+                + "ytd-reel-shelf-renderer,ytd-rich-shelf-renderer,ytd-reel-video-renderer"
+                + "{display:none!important}");;
         if (suggestions) css.append(
                 "ytm-watch-next-secondary-results-renderer,ytm-related-chip-cloud-renderer,"
                 + "ytm-item-section-renderer[section-identifier=\"related-items\"],"
@@ -321,6 +313,26 @@ public class MainActivity extends Activity {
                 + "if(!e){e=document.createElement('style');e.id='tubify-tweaks';"
                 + "(document.head||document.documentElement).appendChild(e);}"
                 + "e.textContent=" + jsString(css.toString()) + ";})();";
+        // Structural Shorts hider: CSS :has() is unsupported on WebView < 105,
+        // so hide via JS instead (works on every WebView). Cleanup runs first so
+        // turning the toggle off restores the elements.
+        js += "(function(){document.querySelectorAll('[data-tubify-shorts]').forEach("
+                + "function(el){el.style.display='';el.removeAttribute('data-tubify-shorts');});})();";
+        if (shorts) js += "(function(){var kill=function(){var p=0,n=0;"
+                + "document.querySelectorAll('ytm-pivot-bar-item-renderer').forEach(function(el){"
+                + "if(el.querySelector('a[href*=\"/shorts\"],.pivot-shorts')){el.style.display='none';"
+                + "el.setAttribute('data-tubify-shorts','1');p++;}});"
+                + "document.querySelectorAll('ytm-tab-renderer,ytd-tab-renderer,ytm-video-with-context-renderer,"
+                + "ytd-video-renderer,ytm-rich-item-renderer,ytd-rich-item-renderer,ytm-rich-section-renderer')"
+                + ".forEach(function(el){if(el.querySelector('a[href*=\"/shorts\"],ytm-shorts-lockup-view-model,"
+                + "ytm-shorts-lockup-view-model-v2')){el.style.display='none';"
+                + "el.setAttribute('data-tubify-shorts','1');n++;}});"
+                + "if(p>0&&p!==window.__tubifyP){window.__tubifyP=p;"
+                + "console.log('TUBIFY_TWEAK shorts pivot='+p+' items='+n);}};"
+                + "var pending=false;var sched=function(){if(pending)return;pending=true;"
+                + "setTimeout(function(){pending=false;kill();},300);};"
+                + "kill();if(!window.__tubifyMO){window.__tubifyMO=new MutationObserver(sched);"
+                + "window.__tubifyMO.observe(document.documentElement,{childList:true,subtree:true});}})();";
         mWeb.evaluateJavascript(js, null);
     }
 
