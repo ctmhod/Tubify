@@ -478,10 +478,8 @@ public class MainActivity extends Activity {
         // YouTube logo: about 10% larger, never shrunk or stretched by the header flex row.
         css.append("ytm-home-logo,ytm-topbar-logo-renderer,c3-topbar-logo"
                 + "{flex:0 0 auto!important;min-width:fit-content}"
-                + "ytm-home-logo>:not(#tubify-gear),ytm-topbar-logo-renderer>:not(#tubify-gear)"
-                + "{zoom:1.1}"
                 + "ytm-home-logo svg,ytm-home-logo img,ytm-topbar-logo-renderer svg"
-                + "{width:auto!important;height:auto!important;max-width:none!important}");
+                + "{transform:scale(1.1);transform-origin:left center;margin-right:8px}");
         css.append("a[href^=\"vnd.youtube:\"],a[href^=\"intent:\"],a[href^=\"youtube://\"],"
                 + "ytm-watch-metadata-app-promo-renderer,ytm-open-app-button-renderer,"
                 + "#open-app-button{display:none!important}");
@@ -548,8 +546,7 @@ public class MainActivity extends Activity {
                 + "ev.preventDefault();ev.stopPropagation();"
                 + "try{Tubify.openSettings();}catch(e){}});"
                 + "logo.parentNode.insertBefore(b,logo.nextSibling);"
-                // The gear may sit inside the zoomed logo container: pin it to 28px.
-                + "var gw=b.getBoundingClientRect().width;if(gw>28.5){b.style.zoom=String(28/gw);}}"
+                + "}"
                 + "ins();"
                 + "var LP=null;"
                 + "function pc(){var p=location.pathname;if(p===LP)return;LP=p;"
