@@ -475,6 +475,11 @@ public class MainActivity extends Activity {
                     + "ytm-rich-item-renderer>ad-slot-renderer,"
                     + "ytm-companion-slot,ytm-companion-ad-renderer{display:none!important}");
         }
+        // YouTube logo: about 10% larger, never shrunk or stretched by the header flex row.
+        css.append("ytm-home-logo,ytm-topbar-logo-renderer,c3-topbar-logo"
+                + "{zoom:1.1;flex:0 0 auto!important;min-width:fit-content}"
+                + "ytm-home-logo svg,ytm-home-logo img,ytm-topbar-logo-renderer svg"
+                + "{width:auto!important;height:auto!important;max-width:none!important}");
         css.append("a[href^=\"vnd.youtube:\"],a[href^=\"intent:\"],a[href^=\"youtube://\"],"
                 + "ytm-watch-metadata-app-promo-renderer,ytm-open-app-button-renderer,"
                 + "#open-app-button{display:none!important}");
