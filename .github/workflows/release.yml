@@ -182,6 +182,7 @@ jobs:
       - name: Publish release v0.1.19
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           cd out
           SIZES=""
