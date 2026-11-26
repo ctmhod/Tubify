@@ -96,4 +96,19 @@ ytx 41-watch-comments-shown "https://m.youtube.com/watch?v=jNQXAC9IVRw" --ez tub
 ytx 42-search-shorts-on "https://m.youtube.com/results?search_query=music" --ez tubify_shorts true
 ytx 43-search-shorts-off "https://m.youtube.com/results?search_query=music" --ez tubify_shorts false
 ytx 44-logo "https://m.youtube.com/results?search_query=music"
+log "== 12 reset to defaults"
+launch_settings dark
+adb shell input swipe 160 100 160 600 300; adb shell input swipe 160 100 160 600 300; sleep 1
+D0=$(checked); log "switches on at fresh dark start: $D0"
+tap "Hide comments"; tap "Hide Shorts"
+D1=$(checked); dump rb; has rb "Dark"; shot 50-before-reset
+log "switches on after changing toggles: $D1"
+adb shell input swipe 160 500 160 100 300; adb shell input swipe 160 500 160 100 300; sleep 1
+tap "Reset to defaults"; sleep $((W+4))
+adb shell input swipe 160 100 160 600 300; adb shell input swipe 160 100 160 600 300; sleep 1
+dump ra; shot 51-after-reset
+has ra "Auto (follow system)"
+D2=$(checked); log "switches on after reset: $D2"
+[ "$D2" = "$B" ] && log "PASS reset restored default toggles" || log "FAIL reset toggles ($B expected, got $D2)"
+fatal reset
 log "DONE"
