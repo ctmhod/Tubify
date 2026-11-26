@@ -16,8 +16,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: lite, pkg: com.tubify.lite, wait: 15 }
-          - { name: full, pkg: com.tubify.app, wait: 60 }
+          - { name: lite, pkg: com.tubify.lite, wait: 15, gpu: swiftshader_indirect, mem: 3072 }
+          - { name: full, pkg: com.tubify.app, wait: 30, gpu: swangle_indirect, mem: 4096 }
     steps:
       - uses: actions/checkout@v4
       - name: Enable KVM
@@ -44,7 +44,7 @@ jobs:
           api-level: 29
           target: google_apis
           arch: x86_64
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 3072
+          emulator-options: -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -memory ${{ matrix.mem }}
           disable-animations: true
           script: bash qa/qa.sh ${{ matrix.pkg }} "$(ls apks/new/*.apk | head -1)" "$(ls apks/old/*.apk | head -1)" qa-out-${{ matrix.name }} ${{ matrix.wait }}
       - name: Upload QA evidence
