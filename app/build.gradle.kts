@@ -10,8 +10,8 @@ android {
         applicationId = "com.tubify.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 20
-        versionName = "0.1.19"
+        versionCode = 21
+        versionName = "0.1.20"
         resourceConfigurations.add("en")
     }
 
@@ -50,9 +50,10 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
-            // Crash reporter native libs: GeckoRuntime handles their absence
-            // gracefully (no crash reporting, everything else unaffected).
-            excludes += setOf("**/libcrashhelper.so", "**/libcrashtools.so")
+            // libcrashhelper/libcrashtools stay in: GeckoView's merged manifest
+            // declares its crash-handler service, and without the libs the
+            // service dies on load, looping "Tubify keeps stopping" dialogs
+            // while the app keeps working.
         }
     }
 
