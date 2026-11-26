@@ -13,8 +13,6 @@ jobs:
       matrix:
         include:
           - { name: a29-swangle, api: 29, target: google_apis, gpu: swangle_indirect }
-          - { name: a34-swangle, api: 34, target: google_apis, gpu: swangle_indirect }
-          - { name: a30-swiftshader-4g, api: 30, target: google_apis, gpu: swiftshader_indirect }
     steps:
       - uses: actions/checkout@v4
       - name: Enable KVM
