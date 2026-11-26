@@ -56,7 +56,9 @@ public class MainActivity extends Activity {
             "youtube.com/get_midroll",
             "youtube.com/ad_break",
             "youtube.com/ytcs/ad",
-            "youtube.com/ads/"
+            "youtube.com/ads/",
+            "googletagservices.com",
+            "google.com/pagead"
     };
 
     private WebView mWeb;
@@ -210,7 +212,14 @@ public class MainActivity extends Activity {
         }
 
         @Override
+        public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+            injectAdCleaner();
+            super.onPageStarted(view, url, favicon);
+        }
+
+        @Override
         public void onPageFinished(WebView view, String url) {
+            injectAdCleaner();
             injectTweaks();
             injectAdSkipper();
             injectGear();
@@ -308,7 +317,10 @@ public class MainActivity extends Activity {
                     + "ytm-in-feed-ad-layout-renderer,ytm-promoted-video-renderer,"
                     + "ytm-compact-promoted-video-renderer,ytm-display-ad-renderer,"
                     + ".video-ads,.ytp-ad-module,.ytp-ad-overlay-container,"
-                    + ".ytp-ad-message-overlay,#player-ads{display:none!important}");
+                    + ".ytp-ad-message-overlay,#player-ads,'
+                    + "ad-slot-renderer,lazy-list>ad-slot-renderer,"
+                    + "ytm-rich-item-renderer>ad-slot-renderer,"
+                    + "ytm-companion-slot,ytm-companion-ad-renderer{display:none!important}");
         }
         css.append("a[href^=\"vnd.youtube:\"],a[href^=\"intent:\"],a[href^=\"youtube://\"],"
                 + "ytm-watch-metadata-app-promo-renderer,ytm-open-app-button-renderer,"
@@ -379,6 +391,49 @@ public class MainActivity extends Activity {
     }
 
     // --- Ad skipper: mute + fast-forward skippable/unskippable video ads ---
+
+    private void injectAdCleaner() {
+        if (!mPrefs.getBoolean("adblock", true)) return;
+        // Strips ad payloads from YouTube data before page scripts see it
+        // (uBlock's approach): adPlacements/adSlots -> no_ads in XHR/fetch
+        // text, playerAds/adPlacements/adSlots/adBreakHeartbeatParams deleted
+        // from parsed JSON and ytInitialPlayerResponse. ES5-compatible so it
+        // runs on any WebView. Limit: server-stitched (SABR) ads baked into
+        // the video stream cannot be removed in a WebView.
+        String js = "(function(){if(window.__tubifyClean)return;window.__tubifyClean=1;"
+                + "var KEYS=['playerAds','adPlacements','adSlots','adBreakHeartbeatParams'];"
+                + "var Q=String.fromCharCode(34);"
+                + "function strip(o,d){if(!o||typeof o!=='object'||d>4)return o;"
+                + "for(var i=0;i<KEYS.length;i++){if(o[KEYS[i]]!==undefined){"
+                + "try{delete o[KEYS[i]];}catch(e){o[KEYS[i]]=undefined;}}}"
+                + "if(d<4){for(var k in o){if(o.hasOwnProperty(k)&&o[k]&&typeof o[k]==='object'){strip(o[k],d+1);}}}"
+                + "return o;}"
+                + "function cleanText(t){if(typeof t!=='string')return t;"
+                + "if(t.indexOf('adPlacements')<0&&t.indexOf('adSlots')<0)return t;"
+                + "return t.split(Q+'adPlacements'+Q).join(Q+'no_ads'+Q)"
+                + ".split(Q+'adSlots'+Q).join(Q+'no_ads'+Q);}"
+                + "try{var O=window.XMLHttpRequest.prototype;"
+                + "var gt=Object.getOwnPropertyDescriptor(O,'responseText').get;"
+                + "Object.defineProperty(O,'responseText',{configurable:true,"
+                + "get:function(){return cleanText(gt.call(this));}});"
+                + "var gr=Object.getOwnPropertyDescriptor(O,'response').get;"
+                + "Object.defineProperty(O,'response',{configurable:true,"
+                + "get:function(){var r=gr.call(this);return typeof r==='string'?cleanText(r):r;}});"
+                + "}catch(e){}"
+                + "try{if(window.Response){var t=window.Response.prototype.text;"
+                + "window.Response.prototype.text=function(){return t.call(this).then(cleanText);};"
+                + "var j=window.Response.prototype.json;"
+                + "window.Response.prototype.json=function(){return j.call(this).then(function(o){return strip(o,0);});};}"
+                + "}catch(e){}"
+                + "try{var JP=JSON.parse;JSON.parse=function(s){var o=JP.apply(this,arguments);"
+                + "if(typeof s==='string'&&(s.indexOf('playerAds')>=0||s.indexOf('adPlacements')>=0"
+                + "||s.indexOf('adSlots')>=0||s.indexOf('adBreakHeartbeatParams')>=0)){strip(o,0);}"
+                + "return o;};}catch(e){}"
+                + "try{var ypr;Object.defineProperty(window,'ytInitialPlayerResponse',"
+                + "{configurable:true,get:function(){return ypr;},set:function(v){ypr=strip(v,0);}});}catch(e){}"
+                + "console.log('TUBIFY_TWEAK adclean on');})();";
+        mWeb.evaluateJavascript(js, null);
+    }
 
     private void injectAdSkipper() {
         if (!mPrefs.getBoolean("adblock", true)) return;
