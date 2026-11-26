@@ -32,6 +32,15 @@ import java.io.ByteArrayInputStream;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
+    // Tubify design tokens (Material 3 dark), colors from the launcher icon.
+    private static final int COL_BASE = 0xFF07080D;
+    private static final int COL_CARD = 0xFF12141C;
+    private static final int COL_BORDER = 0xFF20232E;
+    private static final int COL_TEXT = 0xFFE8EAF0;
+    private static final int COL_TEXT2 = 0xFF8A90A0;
+    private static final int COL_ACCENT = COL_ACCENT;
+
+
     private static final String HOME = "https://m.youtube.com";
 
     // Network-level ad blocking: substrings matched against every request URL.
@@ -295,10 +304,10 @@ public class MainActivity extends Activity {
                 + "var st=document.createElement('style');st.id='tubify-gear-css';"
                 + "st.textContent='#tubify-gear{display:inline-flex;align-items:center;"
                 + "justify-content:center;width:36px;height:36px;margin-left:8px;padding:0;"
-                + "border:none;border-radius:50%;background:rgba(40,40,40,0.9);color:#fff;"
+                + "border:1px solid #20232E;border-radius:50%;background:#12141C;color:#E8EAF0;"
                 + "font-size:20px;line-height:1;vertical-align:middle;flex:0 0 auto;"
                 + "-webkit-tap-highlight-color:transparent}"
-                + "#tubify-gear:active{background:rgba(90,90,90,0.9)}';"
+                + "#tubify-gear:active{background:#20232E}';"
                 + "(document.head||document.documentElement).appendChild(st);"
                 + "function ins(){"
                 + "if(document.getElementById(ID))return;"
@@ -368,21 +377,37 @@ public class MainActivity extends Activity {
         LinearLayout sheet = new LinearLayout(this);
         sheet.setOrientation(LinearLayout.VERTICAL);
         GradientDrawable sheetBg = new GradientDrawable();
-        sheetBg.setColor(0xFF1B1B1B);
-        sheetBg.setCornerRadius(dp(20));
+        sheetBg.setColor(COL_BASE);
+        float sheetR = dp(28);
+        sheetBg.setCornerRadii(new float[]{sheetR, sheetR, sheetR, sheetR, 0, 0, 0, 0});
         sheet.setBackground(sheetBg);
-        sheet.setPadding(dp(20), dp(18), dp(20), dp(12));
+        sheet.setPadding(dp(20), dp(10), dp(20), dp(16));
+        View handle = new View(this);
+        GradientDrawable handleBg = new GradientDrawable();
+        handleBg.setColor(COL_BORDER);
+        handleBg.setCornerRadius(dp(2));
+        handle.setBackground(handleBg);
+        LinearLayout.LayoutParams hlp = new LinearLayout.LayoutParams(dp(32), dp(4));
+        hlp.gravity = Gravity.CENTER_HORIZONTAL;
+        hlp.bottomMargin = dp(14);
+        sheet.addView(handle, hlp);
+
 
         TextView title = new TextView(this);
         title.setText("Tubify Lite settings");
-        title.setTextColor(Color.WHITE);
+        title.setTextColor(COL_TEXT);
         title.setTextSize(19);
         title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         sheet.addView(title);
 
         TextView subtitle = new TextView(this);
-        subtitle.setText("Tweaks apply instantly");
-        subtitle.setTextColor(0xFF9E9E9E);
+        String ver = "";
+        try {
+            ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception ignored) {
+        }
+        subtitle.setText("v" + ver + " - tweaks apply instantly");
+        subtitle.setTextColor(COL_TEXT2);
         subtitle.setTextSize(13);
         subtitle.setPadding(0, dp(2), 0, dp(14));
         sheet.addView(subtitle);
@@ -406,11 +431,12 @@ public class MainActivity extends Activity {
         sheet.addView(sectionLabel("DEVELOPER"));
         TextView errRow = new TextView(this);
         errRow.setText("Error log");
-        errRow.setTextColor(Color.WHITE);
+        errRow.setTextColor(COL_TEXT);
         errRow.setTextSize(16);
         GradientDrawable errBg = new GradientDrawable();
-        errBg.setColor(0xFF2A2A2A);
-        errBg.setCornerRadius(dp(14));
+        errBg.setColor(COL_CARD);
+        errBg.setCornerRadius(dp(16));
+        errBg.setStroke(dp(1), COL_BORDER);
         errRow.setBackground(errBg);
         errRow.setPadding(dp(16), dp(12), dp(12), dp(12));
         LinearLayout.LayoutParams elp = new LinearLayout.LayoutParams(
@@ -424,7 +450,7 @@ public class MainActivity extends Activity {
 
         TextView done = new TextView(this);
         done.setText("Done");
-        done.setTextColor(0xFFFF4444);
+        done.setTextColor(COL_ACCENT);
         done.setTextSize(15);
         done.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         done.setGravity(Gravity.CENTER);
@@ -440,8 +466,8 @@ public class MainActivity extends Activity {
         Window w = dialog.getWindow();
         if (w != null) {
             w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.92f);
-            w.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
+            w.setGravity(Gravity.BOTTOM);
+            w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         }
         dialog.show();
     }
@@ -453,21 +479,32 @@ public class MainActivity extends Activity {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         GradientDrawable boxBg = new GradientDrawable();
-        boxBg.setColor(0xFF1B1B1B);
-        boxBg.setCornerRadius(dp(20));
+        boxBg.setColor(COL_BASE);
+        float boxR = dp(28);
+        boxBg.setCornerRadii(new float[]{boxR, boxR, boxR, boxR, 0, 0, 0, 0});
         box.setBackground(boxBg);
-        box.setPadding(dp(16), dp(14), dp(16), dp(8));
+        box.setPadding(dp(16), dp(10), dp(16), dp(8));
+        View handle = new View(this);
+        GradientDrawable handleBg = new GradientDrawable();
+        handleBg.setColor(COL_BORDER);
+        handleBg.setCornerRadius(dp(2));
+        handle.setBackground(handleBg);
+        LinearLayout.LayoutParams hlp = new LinearLayout.LayoutParams(dp(32), dp(4));
+        hlp.gravity = Gravity.CENTER_HORIZONTAL;
+        hlp.bottomMargin = dp(14);
+        box.addView(handle, hlp);
+
 
         TextView title = new TextView(this);
         title.setText("Error log");
-        title.setTextColor(Color.WHITE);
+        title.setTextColor(COL_TEXT);
         title.setTextSize(17);
         title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         box.addView(title);
 
         TextView body = new TextView(this);
         body.setText(ErrLog.read());
-        body.setTextColor(0xFFCCCCCC);
+        body.setTextColor(COL_TEXT);
         body.setTextSize(11);
         body.setTypeface(android.graphics.Typeface.MONOSPACE);
         body.setTextIsSelectable(true);
@@ -506,9 +543,9 @@ public class MainActivity extends Activity {
         Window w = dialog.getWindow();
         if (w != null) {
             w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.92f);
-            int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.7f);
-            w.setLayout(width, height);
+            w.setGravity(Gravity.BOTTOM);
+            int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.75f);
+            w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, height);
         }
         dialog.show();
     }
@@ -516,7 +553,7 @@ public class MainActivity extends Activity {
     private TextView logButton(String text) {
         TextView b = new TextView(this);
         b.setText(text);
-        b.setTextColor(0xFFFF4444);
+        b.setTextColor(COL_ACCENT);
         b.setTextSize(14);
         b.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         b.setPadding(dp(14), dp(10), dp(6), dp(4));
@@ -532,7 +569,7 @@ public class MainActivity extends Activity {
     private TextView sectionLabel(String text) {
         TextView label = new TextView(this);
         label.setText(text);
-        label.setTextColor(0xFF8A8A8A);
+        label.setTextColor(COL_ACCENT);
         label.setTextSize(12);
         label.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         label.setLetterSpacing(0.08f);
@@ -550,8 +587,9 @@ public class MainActivity extends Activity {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         GradientDrawable rowBg = new GradientDrawable();
-        rowBg.setColor(0xFF2A2A2A);
-        rowBg.setCornerRadius(dp(14));
+        rowBg.setColor(COL_CARD);
+        rowBg.setCornerRadius(dp(16));
+        rowBg.setStroke(dp(1), COL_BORDER);
         row.setBackground(rowBg);
         row.setPadding(dp(16), dp(10), dp(12), dp(10));
 
@@ -559,13 +597,13 @@ public class MainActivity extends Activity {
         texts.setOrientation(LinearLayout.VERTICAL);
         TextView label = new TextView(this);
         label.setText(title);
-        label.setTextColor(Color.WHITE);
+        label.setTextColor(COL_TEXT);
         label.setTextSize(16);
         texts.addView(label);
         if (subtitle != null) {
             TextView sub = new TextView(this);
             sub.setText(subtitle);
-            sub.setTextColor(0xFF9E9E9E);
+            sub.setTextColor(COL_TEXT2);
             sub.setTextSize(12);
             sub.setPadding(0, dp(1), 0, 0);
             texts.addView(sub);
@@ -579,10 +617,10 @@ public class MainActivity extends Activity {
         sw.setSwitchMinWidth(dp(44));
         sw.setThumbTintList(new ColorStateList(
                 new int[][]{{android.R.attr.state_checked}, {}},
-                new int[]{Color.WHITE, 0xFFBDBDBD}));
+                new int[]{Color.WHITE, COL_TEXT2}));
         sw.setTrackTintList(new ColorStateList(
                 new int[][]{{android.R.attr.state_checked}, {}},
-                new int[]{0xFFFF4444, 0xFF4A4A4A}));
+                new int[]{COL_ACCENT, COL_BORDER}));
         sw.setOnCheckedChangeListener((button, isChecked) -> handler.onToggle(isChecked));
         row.addView(sw);
 
@@ -602,8 +640,8 @@ public class MainActivity extends Activity {
         Window w = getWindow();
         w.getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-        w.setStatusBarColor(Color.BLACK);
-        w.setNavigationBarColor(Color.BLACK);
+        w.setStatusBarColor(COL_BASE);
+        w.setNavigationBarColor(COL_BASE);
     }
 
     private int dp(int value) {
