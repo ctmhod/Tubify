@@ -60,21 +60,21 @@ jobs:
           mkdir -p out
           for f in app/build/outputs/apk/release/*.apk; do
             case "$f" in
-              *universal-release.apk) cp "$f" out/Tubify-v0.1.17-0-universal.apk ;;
-              *arm64-v8a-release.apk) cp "$f" out/Tubify-v0.1.17-arm64-v8a.apk ;;
-              *armeabi-v7a-release.apk) cp "$f" out/Tubify-v0.1.17-armeabi-v7a.apk ;;
-              *x86_64-release.apk) cp "$f" out/Tubify-v0.1.17-x86_64.apk ;;
+              *universal-release.apk) cp "$f" out/Tubify-v0.1.18-0-universal.apk ;;
+              *arm64-v8a-release.apk) cp "$f" out/Tubify-v0.1.18-arm64-v8a.apk ;;
+              *armeabi-v7a-release.apk) cp "$f" out/Tubify-v0.1.18-armeabi-v7a.apk ;;
+              *x86_64-release.apk) cp "$f" out/Tubify-v0.1.18-x86_64.apk ;;
             esac
           done
           ls -l out
-          for n in 0-universal arm64-v8a armeabi-v7a x86_64; do test -f "out/Tubify-v0.1.17-$n.apk"; done
-          cp lite/build/outputs/apk/release/lite-release.apk out/Tubify-Lite-v0.1.17.apk
-          test -f out/Tubify-Lite-v0.1.17.apk
+          for n in 0-universal arm64-v8a armeabi-v7a x86_64; do test -f "out/Tubify-v0.1.18-$n.apk"; done
+          cp lite/build/outputs/apk/release/lite-release.apk out/Tubify-Lite-v0.1.18.apk
+          test -f out/Tubify-Lite-v0.1.18.apk
 
       - name: Verify APK contents
         run: |
           set -e
-          for a in out/Tubify-v0.1.17-*.apk; do
+          for a in out/Tubify-v0.1.18-*.apk; do
             echo "== $a =="
             unzip -l "$a" | grep -q 'assets/tweaks/manifest.json'
             unzip -l "$a" | grep -q 'assets/tweaks/content.js'
@@ -88,8 +88,8 @@ jobs:
             unzip -p "$a" assets/tweaks/background.js | grep -q 'insertCSS'
             du -h "$a"
           done
-          echo "== out/Tubify-Lite-v0.1.17.apk =="
-          L=out/Tubify-Lite-v0.1.17.apk
+          echo "== out/Tubify-Lite-v0.1.18.apk =="
+          L=out/Tubify-Lite-v0.1.18.apk
           stat -c%s "$L"
           unzip -l "$L"
           test $(stat -c%s "$L") -lt 1000000
@@ -177,15 +177,15 @@ jobs:
           name: smoke-lite
           path: smoke-lite
 
-      - name: Publish release v0.1.17
+      - name: Publish release v0.1.18
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd out
           SIZES=""
           for f in *.apk; do SIZES="$SIZES $f: $(du -h "$f" | cut -f1)."; done
-          NOTES="Tubify v0.1.17: every release is now smoke-tested on an Android 10 (API 29) emulator before publishing (install, launch, crash check); emulator screenshots attached. Carries all v0.1.16 features. Requires Android 10+. Sizes:$SIZES Start with the universal APK."
-          gh release view v0.1.17 >/dev/null 2>&1 && gh release delete v0.1.17 --yes || true
-          gh release create v0.1.17 --title "Tubify v0.1.17" --notes "$NOTES" --latest *.apk
+          NOTES="Tubify v0.1.18: Lite error log no longer records intentionally blocked ad requests as errors, and labels media-stream (googlevideo) failures as media so real problems stand out. Carries all v0.1.16 features plus the CI emulator smoke test that gates this release (screenshots attached). Requires Android 10+. Sizes:$SIZES Start with the universal APK."
+          gh release view v0.1.18 >/dev/null 2>&1 && gh release delete v0.1.18 --yes || true
+          gh release create v0.1.18 --title "Tubify v0.1.18" --notes "$NOTES" --latest *.apk
           cd ..
-          gh release upload v0.1.17 "smoke-full/shot.png#Tubify-v0.1.17-Full-emulator-Android10.png" "smoke-lite/shot.png#Tubify-v0.1.17-Lite-emulator-Android10.png"
+          gh release upload v0.1.18 "smoke-full/shot.png#Tubify-v0.1.18-Full-emulator-Android10.png" "smoke-lite/shot.png#Tubify-v0.1.18-Lite-emulator-Android10.png"
