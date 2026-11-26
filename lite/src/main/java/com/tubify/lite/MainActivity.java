@@ -477,7 +477,9 @@ public class MainActivity extends Activity {
         }
         // YouTube logo: about 10% larger, never shrunk or stretched by the header flex row.
         css.append("ytm-home-logo,ytm-topbar-logo-renderer,c3-topbar-logo"
-                + "{zoom:1.1;flex:0 0 auto!important;min-width:fit-content}"
+                + "{flex:0 0 auto!important;min-width:fit-content}"
+                + "ytm-home-logo>:not(#tubify-gear),ytm-topbar-logo-renderer>:not(#tubify-gear)"
+                + "{zoom:1.1}"
                 + "ytm-home-logo svg,ytm-home-logo img,ytm-topbar-logo-renderer svg"
                 + "{width:auto!important;height:auto!important;max-width:none!important}");
         css.append("a[href^=\"vnd.youtube:\"],a[href^=\"intent:\"],a[href^=\"youtube://\"],"
