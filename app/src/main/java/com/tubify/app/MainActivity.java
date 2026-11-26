@@ -35,6 +35,12 @@ public class MainActivity extends Activity {
     private static final String UBO_XPI =
             "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
     private static final String UBO_ID = "uBlock0@raymondhill.net";
+    private static final String AG_XPI =
+            "https://addons.mozilla.org/firefox/downloads/latest/adguard-adblocker/latest.xpi";
+    private static final String AG_ID = "adguardadblocker@adguard.com";
+    private static final String ABP_XPI =
+            "https://addons.mozilla.org/firefox/downloads/latest/adblock-plus/latest.xpi";
+    private static final String ABP_ID = "{d10d0bf8-f5b5-c8b4-a8b2-2b9879e08c5d}";
     private static final String TWEAKS_URI = "resource://android/assets/tweaks/";
     private static final String TWEAKS_ID = "tweaks@tubify.app";
     private static final String[] TWEAK_KEYS = {"shorts", "suggestions", "comments"};
@@ -96,7 +102,7 @@ public class MainActivity extends Activity {
                 }
             });
             installTweaks();
-            syncUbo();
+            syncBlockers();
         }
 
         mSession = new GeckoSession(new GeckoSessionSettings());
@@ -129,6 +135,17 @@ public class MainActivity extends Activity {
             @Override
             public void onCanGoBack(GeckoSession session, boolean canGoBack) {
                 mCanGoBack = canGoBack;
+            }
+
+            @Override
+            public GeckoResult<Boolean> onLoadRequest(GeckoSession session,
+                    LoadRequest request) {
+                if (request.uri != null && !request.uri.startsWith("http://")
+                        && !request.uri.startsWith("https://")) {
+                    // Never fire app-launch intents (youtube://, intent://, vnd.youtube:).
+                    return GeckoResult.fromValue(true);
+                }
+                return null;
             }
 
             @Override
@@ -189,11 +206,32 @@ public class MainActivity extends Activity {
         sheet.addView(subtitle);
 
         sheet.addView(sectionLabel("BLOCKING"));
-        sheet.addView(settingRow(dialog, "Ad blocking", "uBlock Origin",
+        sheet.addView(settingRow(dialog, "uBlock Origin", "Recommended",
                 mPrefs.getBoolean("adblock", true), (checked) -> {
                     mPrefs.edit().putBoolean("adblock", checked).apply();
-                    syncUbo();
+                    syncBlockers();
                 }));
+        sheet.addView(settingRow(dialog, "AdGuard AdBlocker", null,
+                mPrefs.getBoolean("adguard", false), (checked) -> {
+                    mPrefs.edit().putBoolean("adguard", checked).apply();
+                    syncBlockers();
+                }));
+        sheet.addView(settingRow(dialog, "AdBlock Plus", null,
+                mPrefs.getBoolean("abp", false), (checked) -> {
+                    mPrefs.edit().putBoolean("abp", checked).apply();
+                    syncBlockers();
+                }));
+        int blockersOn = (mPrefs.getBoolean("adblock", true) ? 1 : 0)
+                + (mPrefs.getBoolean("adguard", false) ? 1 : 0)
+                + (mPrefs.getBoolean("abp", false) ? 1 : 0);
+        if (blockersOn > 1) {
+            TextView warn = new TextView(this);
+            warn.setText("Running several blockers can slow down page loads.");
+            warn.setTextColor(0xFFFFB74D);
+            warn.setTextSize(12);
+            warn.setPadding(dp(4), 0, dp(4), dp(6));
+            sheet.addView(warn);
+        }
 
         sheet.addView(sectionLabel("INTERFACE"));
         sheet.addView(settingRow(dialog, "Hide Shorts", null,
@@ -408,140 +446,72 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void syncUbo() {
-        final boolean want = mPrefs.getBoolean("adblock", true);
+    private void syncBlockers() {
+        syncBlocker("adblock", true, "diag_ubo", "ubo", UBO_ID, UBO_XPI, "uBlock Origin");
+        syncBlocker("adguard", false, "diag_ag", "ag", AG_ID, AG_XPI, "AdGuard");
+        syncBlocker("abp", false, "diag_abp", "abp", ABP_ID, ABP_XPI, "AdBlock Plus");
+    }
+
+    private void syncBlocker(String prefKey, boolean def, String diagKey, String installedKey,
+            String extId, String xpiUrl, String name) {
+        final boolean want = mPrefs.getBoolean(prefKey, def);
         if (!want) {
-            mPrefs.edit().putString("diag_ubo", "off").apply();
+            mPrefs.edit().putString(diagKey, "off").apply();
         }
         mExtController.list().accept(extensions -> {
             WebExtension found = null;
             if (extensions != null) {
                 for (WebExtension e : extensions) {
-                    if (e.id != null && e.id.equals(UBO_ID)) {
+                    if (e.id != null && e.id.equals(extId)) {
                         found = e;
                         break;
                     }
                 }
             }
             if (found == null) {
-                if (want && !mPrefs.getBoolean("ubo", false)) {
-                    mPrefs.edit().putString("diag_ubo", "installing").apply();
-                    mExtController.install(UBO_XPI).accept(
+                if (want && !mPrefs.getBoolean(installedKey, false)) {
+                    mPrefs.edit().putString(diagKey, "installing").apply();
+                    mExtController.install(xpiUrl).accept(
                             installed -> mPrefs.edit()
-                                    .putBoolean("ubo", true)
-                                    .putString("diag_ubo", "active")
+                                    .putBoolean(installedKey, true)
+                                    .putString(diagKey, "active")
                                     .apply(),
                             error -> {
-                                android.util.Log.e("Tubify", "uBlock install failed", error);
                                 String msg = error != null && error.getMessage() != null
                                         ? error.getMessage() : "unknown";
-                                mPrefs.edit().putString("diag_ubo",
+                                mPrefs.edit().putString(diagKey,
                                         "install failed: " + msg + " - retries on next start").apply();
-                                ErrLog.log("ublock", "install failed: " + msg);
+                                ErrLog.log("blocker", name + " install failed: " + msg);
                             });
                 } else if (want) {
-                    mPrefs.edit().putString("diag_ubo", "install pending - retries on next start").apply();
+                    mPrefs.edit().putString(diagKey, "install pending - retries on next start").apply();
                 }
                 return;
             }
-            mUbo = found;
-            boolean enabled = mUbo.metaData != null && mUbo.metaData.enabled;
+            boolean enabled = found.metaData != null && found.metaData.enabled;
             if (want && !enabled) {
-                mExtController.enable(mUbo, WebExtensionController.EnableSource.USER);
-                mPrefs.edit().putString("diag_ubo", "active").apply();
+                mExtController.enable(found, WebExtensionController.EnableSource.USER);
+                mPrefs.edit().putString(diagKey, "active").apply();
             } else if (!want && enabled) {
-                mExtController.disable(mUbo, WebExtensionController.EnableSource.USER);
-                mPrefs.edit().putString("diag_ubo", "off").apply();
+                mExtController.disable(found, WebExtensionController.EnableSource.USER);
+                mPrefs.edit().putString(diagKey, "off").apply();
             } else {
-                mPrefs.edit().putString("diag_ubo", want ? "active" : "off").apply();
+                mPrefs.edit().putString(diagKey, want ? "active" : "off").apply();
             }
         });
-    }
-
-    private void showErrorLog() {
-        Dialog dialog = new Dialog(this);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable boxBg = new GradientDrawable();
-        boxBg.setColor(0xFF1B1B1B);
-        boxBg.setCornerRadius(dp(20));
-        box.setBackground(boxBg);
-        box.setPadding(dp(16), dp(14), dp(16), dp(8));
-
-        TextView title = new TextView(this);
-        title.setText("Error log");
-        title.setTextColor(Color.WHITE);
-        title.setTextSize(17);
-        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        box.addView(title);
-
-        TextView body = new TextView(this);
-        body.setText(ErrLog.read());
-        body.setTextColor(0xFFCCCCCC);
-        body.setTextSize(11);
-        body.setTypeface(android.graphics.Typeface.MONOSPACE);
-        body.setTextIsSelectable(true);
-        body.setPadding(0, dp(8), 0, dp(8));
-        android.widget.ScrollView sv = new android.widget.ScrollView(this);
-        sv.addView(body);
-        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
-        box.addView(sv, slp);
-
-        LinearLayout btns = new LinearLayout(this);
-        btns.setOrientation(LinearLayout.HORIZONTAL);
-        btns.setGravity(Gravity.END);
-        TextView copy = logButton("Copy");
-        TextView clear = logButton("Clear");
-        TextView close = logButton("Close");
-        copy.setOnClickListener(v -> {
-            android.content.ClipboardManager cm =
-                    (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-            cm.setPrimaryClip(android.content.ClipData.newPlainText(
-                    "Tubify error log", ErrLog.read()));
-            android.widget.Toast.makeText(this, "Error log copied",
-                    android.widget.Toast.LENGTH_SHORT).show();
-        });
-        clear.setOnClickListener(v -> {
-            ErrLog.clear();
-            body.setText(ErrLog.read());
-        });
-        close.setOnClickListener(v -> dialog.dismiss());
-        btns.addView(copy);
-        btns.addView(clear);
-        btns.addView(close);
-        box.addView(btns);
-
-        dialog.setContentView(box);
-        Window w = dialog.getWindow();
-        if (w != null) {
-            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.92f);
-            int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.7f);
-            w.setLayout(width, height);
-        }
-        dialog.show();
-    }
-
-    private TextView logButton(String text) {
-        TextView b = new TextView(this);
-        b.setText(text);
-        b.setTextColor(0xFFFF4444);
-        b.setTextSize(14);
-        b.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        b.setPadding(dp(14), dp(10), dp(6), dp(4));
-        return b;
     }
 
     private String buildDiagnostics() {
         String tweaks = mPrefs.getString("diag_tweaks", "not installed yet");
         boolean bridge = mPrefs.getBoolean("diag_bridge", false);
         String ubo = mPrefs.getString("diag_ubo", "not installed yet");
+        String ag = mPrefs.getString("diag_ag", "off");
+        String abp = mPrefs.getString("diag_abp", "off");
         return "Tweaks extension: " + tweaks + "\n"
                 + "App bridge: " + (bridge ? "connected" : "not connected") + "\n"
-                + "uBlock Origin: " + ubo;
+                + "uBlock Origin: " + ubo + "\n"
+                + "AdGuard: " + ag + "\n"
+                + "AdBlock Plus: " + abp;
     }
 
     private void applyImmersive() {
