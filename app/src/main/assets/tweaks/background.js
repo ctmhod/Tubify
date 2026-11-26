@@ -6,7 +6,7 @@
 // keeps settings in storage, and receives live updates from the Android app
 // over the connectNative("browser") port.
 
-const DEFAULTS = { shorts: true, suggestions: true, comments: false };
+const DEFAULTS = { shorts: true, suggestions: true, comments: false, home: false };
 
 // Styles for the Tubify gear button that the content script injects into the
 // YouTube header next to the logo.
@@ -50,6 +50,12 @@ const CSS = {
     'ytm-item-section-renderer[section-identifier="watch-next-feed"]',
     "ytd-watch-next-secondary-results-renderer",
     "#related"
+  ].join(", ") + " { display: none !important; }",
+  home: [
+    ".tubify-home ytm-rich-grid-renderer",
+    ".tubify-home ytm-rich-section-renderer",
+    ".tubify-home ytm-single-column-browse-results-renderer",
+    "ytd-browse[page-subtype='home'] ytd-rich-grid-renderer"
   ].join(", ") + " { display: none !important; }",
   comments: [
     "ytm-comment-section-renderer",
