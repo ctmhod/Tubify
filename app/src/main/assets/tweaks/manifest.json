@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Tubify Tweaks",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Tubify interface tweaks for YouTube: hide Shorts, suggestions and comments.",
   "browser_specific_settings": {
     "gecko": {
@@ -18,13 +18,21 @@
     "*://youtube.com/*"
   ],
   "background": {
-    "scripts": ["background.js"],
+    "scripts": [
+      "background.js"
+    ],
     "persistent": true
   },
   "content_scripts": [
     {
-      "matches": ["*://m.youtube.com/*", "*://www.youtube.com/*", "*://youtube.com/*"],
-      "js": ["content.js"],
+      "matches": [
+        "*://m.youtube.com/*",
+        "*://www.youtube.com/*",
+        "*://youtube.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start",
       "all_frames": false
     }
