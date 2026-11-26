@@ -65,6 +65,8 @@ const CSS = {
   comments: [
     "ytm-comment-section-renderer",
     "ytm-comments-entry-point-header-renderer",
+    'ytm-item-section-renderer[section-identifier="comments-entry-point"]',
+    'ytm-engagement-panel-section-list-renderer[target-id*="comments-section"]',
     "ytd-comments",
     "#comments"
   ].join(", ") + " { display: none !important; }"
