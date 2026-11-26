@@ -27,6 +27,8 @@ A minimal YouTube client for Android in two flavors. No ads, no Shorts, no sugge
 
 ## Install
 
+Requires Android 10 (API 29) or newer.
+
 1. Open [Releases](https://github.com/ctmhod/Tubify/releases) and pick the latest version.
 2. Download the right APK (universal is listed first on purpose):
    - **Tubify-vX.Y.Z-0-universal.apk** - works on every device; large (~237 MB, GeckoView inside)
