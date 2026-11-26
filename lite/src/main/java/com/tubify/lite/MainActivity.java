@@ -458,6 +458,11 @@ public class MainActivity extends Activity {
             showErrorLog();
         });
 
+        sheet.addView(linkRow(dialog, "Developer", "@ctmhod on Telegram", "https://t.me/ctmhod"));
+        sheet.addView(linkRow(dialog, "Source code", "github.com/ctmhod/Tubify", "https://github.com/ctmhod/Tubify"));
+        sheet.addView(linkRow(dialog, "Releases", "Latest APKs", "https://github.com/ctmhod/Tubify/releases"));
+        sheet.addView(linkRow(dialog, "Report an issue", "github.com/ctmhod/Tubify/issues", "https://github.com/ctmhod/Tubify/issues"));
+
         TextView done = new TextView(this);
         done.setText("Done");
         done.setTextColor(COL_ACCENT);
@@ -574,6 +579,43 @@ public class MainActivity extends Activity {
         mPrefs.edit().putBoolean(key, checked).apply();
         injectTweaks();
         injectAdSkipper();
+    }
+
+
+    private View linkRow(Dialog dialog, String title, String subtitle, String url) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(COL_CARD);
+        bg.setCornerRadius(dp(16));
+        bg.setStroke(dp(1), COL_BORDER);
+        row.setBackground(bg);
+        row.setPadding(dp(16), dp(12), dp(12), dp(12));
+        TextView t = new TextView(this);
+        t.setText(title);
+        t.setTextColor(COL_TEXT);
+        t.setTextSize(16);
+        row.addView(t);
+        if (subtitle != null) {
+            TextView s = new TextView(this);
+            s.setText(subtitle);
+            s.setTextColor(COL_TEXT2);
+            s.setTextSize(12);
+            s.setPadding(0, dp(2), 0, 0);
+            row.addView(s);
+        }
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.bottomMargin = dp(8);
+        row.setLayoutParams(lp);
+        row.setOnClickListener(v -> {
+            dialog.dismiss();
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+            } catch (Exception ignored) {
+            }
+        });
+        return row;
     }
 
     private TextView sectionLabel(String text) {
