@@ -111,7 +111,13 @@ public class MainActivity extends Activity {
                 String url = request.getUrl().toString().toLowerCase(Locale.US);
                 for (String p : AD_PATTERNS) {
                     if (url.contains(p)) {
+                        // 204 + permissive CORS: the page sees a clean empty
+                        // response instead of a CORS/network error, so YouTube
+                        // scripts do not misbehave or spam the console.
+                        java.util.Map<String, String> headers = new java.util.HashMap<>();
+                        headers.put("Access-Control-Allow-Origin", "*");
                         return new WebResourceResponse("text/plain", "utf-8",
+                                204, "No Content", headers,
                                 new ByteArrayInputStream(new byte[0]));
                     }
                 }
@@ -173,9 +179,23 @@ public class MainActivity extends Activity {
     private class Chrome extends WebChromeClient {
         @Override
         public boolean onConsoleMessage(android.webkit.ConsoleMessage msg) {
-            if (msg.messageLevel() == android.webkit.ConsoleMessage.MessageLevel.ERROR) {
-                ErrLog.log("js", msg.message() + " @" + msg.sourceId() + ":" + msg.lineNumber());
+            if (msg.messageLevel() != android.webkit.ConsoleMessage.MessageLevel.ERROR) {
+                return false;
             }
+            String m = msg.message();
+            String low = m.toLowerCase(Locale.US);
+            for (String p : AD_PATTERNS) {
+                if (low.contains(p)) {
+                    // Expected noise from blocked ad requests (CORS, ERR_BLOCKED).
+                    return false;
+                }
+            }
+            if ((low.contains("cors") || low.contains("err_blocked"))
+                    && (low.contains("doubleclick") || low.contains("pagead")
+                            || low.contains("adservice"))) {
+                return false;
+            }
+            ErrLog.log("js", m + " @" + msg.sourceId() + ":" + msg.lineNumber());
             return false;
         }
 
