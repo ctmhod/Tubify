@@ -12,8 +12,8 @@ const DEFAULTS = { shorts: true, suggestions: true, comments: false, home: false
 // YouTube header next to the logo.
 const GEAR_CSS =
   "#tubify-gear{display:inline-flex;align-items:center;justify-content:center;" +
-  "width:36px;height:36px;margin-left:-10px;padding:0;border:1px solid #20232E;border-radius:50%;" +
-  "background:#12141C;color:#E8EAF0;font-size:20px;line-height:1;" +
+  "width:28px;height:28px;margin-left:-10px;padding:0;border:1px solid #20232E;border-radius:50%;" +
+  "background:#12141C;color:#E8EAF0;font-size:16px;line-height:1;" +
   "vertical-align:middle;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}" +
   "#tubify-gear:active{background:#20232E;}";
 
