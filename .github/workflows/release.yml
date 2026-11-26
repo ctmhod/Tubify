@@ -52,7 +52,7 @@ jobs:
           TUBIFY_STORE_FILE: /tmp/sign/tubify.p12
           TUBIFY_STORE_PASSWORD: ${{ secrets.TUBIFY_KEYSTORE_PASSWORD }}
           TUBIFY_KEY_PASSWORD: ${{ secrets.TUBIFY_KEY_PASSWORD }}
-        run: gradle assembleRelease --no-daemon
+        run: gradle :app:assembleRelease :lite:assembleRelease --no-daemon
 
       - name: Collect APKs
         run: |
@@ -68,6 +68,8 @@ jobs:
           done
           ls -l out
           for n in all arm64-v8a armeabi-v7a x86_64; do test -f "out/Tubify-v0.1.1-$n.apk"; done
+          cp lite/build/outputs/apk/release/lite-release.apk out/Tubify-Lite-v0.1.0.apk
+          test -f out/Tubify-Lite-v0.1.0.apk
 
       - name: Verify APK contents
         run: |
@@ -82,8 +84,18 @@ jobs:
             unzip -p "$a" classes.dex | strings | grep -q 'tweaks@tubify.app'
             unzip -p "$a" classes.dex | strings | grep -q 'm.youtube.com'
             unzip -p "$a" assets/tweaks/manifest.json | grep -q 'tweaks@tubify.app'
+            unzip -p "$a" assets/tweaks/manifest.json | grep -q 'geckoViewAddons'
+            unzip -p "$a" assets/tweaks/background.js | grep -q 'insertCSS'
             du -h "$a"
           done
+          echo "== out/Tubify-Lite-v0.1.0.apk =="
+          L=out/Tubify-Lite-v0.1.0.apk
+          test $(stat -c%s "$L") -lt 1000000
+          test -z "$(unzip -l "$L" | grep 'lib/')"
+          unzip -p "$L" classes.dex | strings | grep -q 'm.youtube.com'
+          unzip -p "$L" classes.dex | strings | grep -q 'doubleclick.net'
+          unzip -p "$L" resources.arsc | strings | grep -q 'ic_launcher'
+          du -h "$L"
 
       - name: Publish release v0.1.1
         env:
@@ -92,6 +104,6 @@ jobs:
           cd out
           SIZES=""
           for f in *.apk; do SIZES="$SIZES $f: $(du -h "$f" | cut -f1)."; done
-          NOTES="Tubify v0.1.1 adds x86_64 and a universal (all-ABIs) APK alongside arm64-v8a and armeabi-v7a, and switches to an adaptive launcher icon (tight-cropped T, Routify-style). 32-bit x86 is not published because GeckoView 161 ships no x86 native libraries. GeckoView engine with uBlock Origin (installed from addons.mozilla.org on first run) and a bundled Tubify Tweaks extension. Gear menu toggles: ad blocking, hide Shorts, hide suggestions, hide comments. Signed with the permanent Tubify release key. Sizes:$SIZES Pick the APK matching your device ABI, or the all APK when unsure (much larger)."
+          NOTES="Tubify v0.1.1 adds x86_64 and a universal (all-ABIs) APK alongside arm64-v8a and armeabi-v7a, and switches to an adaptive launcher icon (tight-cropped T, Routify-style). 32-bit x86 is not published because GeckoView 161 ships no x86 native libraries. GeckoView engine with uBlock Origin (installed from addons.mozilla.org on first run) and a bundled Tubify Tweaks extension. Gear menu toggles: ad blocking, hide Shorts, hide suggestions, hide comments. Signed with the permanent Tubify release key. Sizes:$SIZES Pick the APK matching your device ABI, or the all APK when unsure (much larger). Tubify-Lite is a separate tiny WebView-based build (<1MB): hides Shorts/suggestions/comments, blocks ad requests and skips video ads; ad blocking is less complete than uBlock Origin in the full version."
           gh release view v0.1.1 >/dev/null 2>&1 && gh release delete v0.1.1 --yes || true
           gh release create v0.1.1 --title "Tubify v0.1.1" --notes "$NOTES" --latest *.apk
