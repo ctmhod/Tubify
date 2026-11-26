@@ -267,7 +267,39 @@ public class MainActivity extends Activity {
         mSession.open(sRuntime);
         mView.setSession(mSession);
         mView.coverUntilFirstPaint(Color.BLACK);
-        mSession.loadUri("https://m.youtube.com");
+        String t = ytTarget(getIntent());
+        mSession.loadUri(t != null ? t : "https://m.youtube.com");
+    }
+
+    /** Maps an incoming VIEW link (youtube.com, youtu.be) to a m.youtube.com URL, or null. */
+    private static String ytTarget(android.content.Intent in) {
+        if (in == null || !android.content.Intent.ACTION_VIEW.equals(in.getAction())) return null;
+        android.net.Uri u = in.getData();
+        if (u == null || u.getHost() == null) return null;
+        String sch = String.valueOf(u.getScheme());
+        if (!sch.equals("https") && !sch.equals("http")) return null;
+        String h = u.getHost().toLowerCase(java.util.Locale.US);
+        if (h.equals("youtu.be")) {
+            String id = u.getLastPathSegment();
+            if (id == null) return null;
+            String t = u.getQueryParameter("t");
+            return "https://m.youtube.com/watch?v=" + android.net.Uri.encode(id)
+                    + (t != null ? "&t=" + android.net.Uri.encode(t) : "");
+        }
+        if (h.equals("youtube.com") || h.endsWith(".youtube.com")) {
+            String path = u.getEncodedPath() == null ? "/" : u.getEncodedPath();
+            String q = u.getEncodedQuery();
+            return "https://m.youtube.com" + path + (q != null ? "?" + q : "");
+        }
+        return null;
+    }
+
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String t = ytTarget(intent);
+        if (t != null && mSession != null) mSession.loadUri(t);
     }
 
     // --- Settings sheet (dark, rounded cards, switches) --------------------
