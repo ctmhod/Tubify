@@ -754,4 +754,38 @@ public class MainActivity extends Activity {
         }
         super.onDestroy();
     }
+
+    private void logPreviousExits() {
+        // Native/child-process crashes bypass the Java crash handler; on the
+        // next launch, ApplicationExitInfo (API 30+) still tells us what died.
+        if (android.os.Build.VERSION.SDK_INT < 30) {
+            return;
+        }
+        try {
+            android.app.ActivityManager am =
+                    (android.app.ActivityManager) getSystemService(ACTIVITY_SERVICE);
+            java.util.List<android.app.ApplicationExitInfo> exits =
+                    am.getHistoricalProcessExitReasons(getPackageName(), 0, 5);
+            for (android.app.ApplicationExitInfo info : exits) {
+                ErrLog.log("exit", "reason=" + info.getReason() + " status="
+                        + info.getStatus() + " process=" + info.getProcessName()
+                        + " importance=" + info.getImportance()
+                        + (info.getDescription() != null ? " desc=" + info.getDescription() : ""));
+                try {
+                    java.io.InputStream trace = info.getTraceInputStream();
+                    if (trace != null) {
+                        byte[] buf = new byte[700];
+                        int n = trace.read(buf);
+                        trace.close();
+                        if (n > 0) {
+                            ErrLog.log("trace", new String(buf, 0, n, "UTF-8"));
+                        }
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
 }
