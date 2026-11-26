@@ -1,17 +1,21 @@
 package com.tubify.app;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import org.json.JSONException;
@@ -53,12 +57,8 @@ public class MainActivity extends Activity {
         FrameLayout root = new FrameLayout(this);
         mView = new GeckoView(this);
         root.addView(mView, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-
-        TextView gear = buildGear();
-        FrameLayout.LayoutParams glp = new FrameLayout.LayoutParams(dp(44), dp(44), Gravity.TOP | Gravity.END);
-        glp.setMargins(0, dp(8), dp(8), 0);
-        root.addView(gear, glp);
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
         setContentView(root);
 
         if (sRuntime == null) {
@@ -115,11 +115,9 @@ public class MainActivity extends Activity {
                                     | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-                    gear.setVisibility(View.GONE);
                 } else {
                     applyImmersive();
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                    gear.setVisibility(View.VISIBLE);
                 }
             }
         });
@@ -137,48 +135,151 @@ public class MainActivity extends Activity {
         mSession.loadUri("https://m.youtube.com");
     }
 
-    private TextView buildGear() {
-        TextView gear = new TextView(this);
-        gear.setText("⚙");
-        gear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-        gear.setTextColor(Color.WHITE);
-        gear.setGravity(Gravity.CENTER);
-        gear.setContentDescription("Tubify settings");
-        GradientDrawable bg = new GradientDrawable();
-        bg.setShape(GradientDrawable.OVAL);
-        bg.setColor(0x99000000);
-        gear.setBackground(bg);
-        gear.setOnClickListener(v -> showSettings());
-        return gear;
-    }
+    // --- Settings sheet (dark, rounded cards, switches) --------------------
+    // The settings gear itself lives inside the YouTube header, injected by
+    // the tweaks extension next to the logo.
 
     private void showSettings() {
-        String[] labels = {
-                "Ad blocking (uBlock Origin)",
-                "Hide Shorts",
-                "Hide suggestions",
-                "Hide comments"
-        };
-        boolean[] checked = {
-                mPrefs.getBoolean("adblock", true),
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout sheet = new LinearLayout(this);
+        sheet.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable sheetBg = new GradientDrawable();
+        sheetBg.setColor(0xFF1B1B1B);
+        sheetBg.setCornerRadius(dp(20));
+        sheet.setBackground(sheetBg);
+        sheet.setPadding(dp(20), dp(18), dp(20), dp(12));
+
+        TextView title = new TextView(this);
+        title.setText("Tubify settings");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(19);
+        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        sheet.addView(title);
+
+        TextView subtitle = new TextView(this);
+        subtitle.setText("Tweaks apply instantly");
+        subtitle.setTextColor(0xFF9E9E9E);
+        subtitle.setTextSize(13);
+        subtitle.setPadding(0, dp(2), 0, dp(14));
+        sheet.addView(subtitle);
+
+        sheet.addView(sectionLabel("BLOCKING"));
+        sheet.addView(settingRow(dialog, "Ad blocking", "uBlock Origin",
+                mPrefs.getBoolean("adblock", true), (checked) -> {
+                    mPrefs.edit().putBoolean("adblock", checked).apply();
+                    syncUbo();
+                }));
+
+        sheet.addView(sectionLabel("INTERFACE"));
+        sheet.addView(settingRow(dialog, "Hide Shorts", null,
                 mPrefs.getBoolean("shorts", true),
+                (checked) -> setTweak("shorts", checked)));
+        sheet.addView(settingRow(dialog, "Hide suggestions", null,
                 mPrefs.getBoolean("suggestions", true),
-                mPrefs.getBoolean("comments", false)
-        };
-        new AlertDialog.Builder(this)
-                .setTitle("Tubify settings")
-                .setMultiChoiceItems(labels, checked, (dialog, which, isChecked) -> {
-                    if (which == 0) {
-                        mPrefs.edit().putBoolean("adblock", isChecked).apply();
-                        syncUbo();
-                    } else {
-                        mPrefs.edit().putBoolean(TWEAK_KEYS[which - 1], isChecked).apply();
-                        sendTweaksSettings();
-                    }
-                })
-                .setPositiveButton("Done", (dialog, which) -> sendTweaksSettings())
-                .show();
+                (checked) -> setTweak("suggestions", checked)));
+        sheet.addView(settingRow(dialog, "Hide comments", null,
+                mPrefs.getBoolean("comments", false),
+                (checked) -> setTweak("comments", checked)));
+
+        TextView done = new TextView(this);
+        done.setText("Done");
+        done.setTextColor(0xFFFF4444);
+        done.setTextSize(15);
+        done.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        done.setGravity(Gravity.CENTER);
+        done.setPadding(dp(16), dp(12), dp(4), dp(4));
+        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        dlp.gravity = Gravity.END;
+        dlp.topMargin = dp(6);
+        sheet.addView(done, dlp);
+        done.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.setContentView(sheet);
+        Window w = dialog.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.92f);
+            w.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        dialog.show();
     }
+
+    private void setTweak(String key, boolean checked) {
+        mPrefs.edit().putBoolean(key, checked).apply();
+        sendTweaksSettings();
+    }
+
+    private TextView sectionLabel(String text) {
+        TextView label = new TextView(this);
+        label.setText(text);
+        label.setTextColor(0xFF8A8A8A);
+        label.setTextSize(12);
+        label.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        label.setLetterSpacing(0.08f);
+        label.setPadding(dp(2), dp(8), 0, dp(6));
+        return label;
+    }
+
+    private interface ToggleHandler {
+        void onToggle(boolean checked);
+    }
+
+    private View settingRow(Dialog dialog, String title, String subtitle,
+            boolean checked, ToggleHandler handler) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        GradientDrawable rowBg = new GradientDrawable();
+        rowBg.setColor(0xFF2A2A2A);
+        rowBg.setCornerRadius(dp(14));
+        row.setBackground(rowBg);
+        row.setPadding(dp(16), dp(10), dp(12), dp(10));
+
+        LinearLayout texts = new LinearLayout(this);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        TextView label = new TextView(this);
+        label.setText(title);
+        label.setTextColor(Color.WHITE);
+        label.setTextSize(16);
+        texts.addView(label);
+        if (subtitle != null) {
+            TextView sub = new TextView(this);
+            sub.setText(subtitle);
+            sub.setTextColor(0xFF9E9E9E);
+            sub.setTextSize(12);
+            sub.setPadding(0, dp(1), 0, 0);
+            texts.addView(sub);
+        }
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        row.addView(texts, tlp);
+
+        Switch sw = new Switch(this);
+        sw.setShowText(false);
+        sw.setSwitchMinWidth(dp(44));
+        sw.setThumbTintList(new ColorStateList(
+                new int[][]{{android.R.attr.state_checked}, {}},
+                new int[]{Color.WHITE, 0xFFBDBDBD}));
+        sw.setTrackTintList(new ColorStateList(
+                new int[][]{{android.R.attr.state_checked}, {}},
+                new int[]{0xFFFF4444, 0xFF4A4A4A}));
+        sw.setOnCheckedChangeListener((button, isChecked) -> handler.onToggle(isChecked));
+        row.addView(sw);
+
+        sw.setChecked(checked);
+        row.setOnClickListener(v -> sw.toggle());
+
+        LinearLayout wrap = new LinearLayout(this);
+        wrap.setOrientation(LinearLayout.VERTICAL);
+        wrap.addView(row);
+        wrap.setPadding(0, 0, 0, dp(8));
+        return wrap;
+    }
+
+    // --- Extension plumbing -------------------------------------------------
 
     private void installTweaks() {
         mExtController.ensureBuiltIn(TWEAKS_URI, TWEAKS_ID).accept(extension -> {
@@ -189,6 +290,16 @@ public class MainActivity extends Activity {
                 @Override
                 public void onConnect(WebExtension.Port port) {
                     mTweaksPort = port;
+                    port.setDelegate(new WebExtension.PortDelegate() {
+                        @Override
+                        public void onMessage(WebExtension.Port p, Object message) {
+                            if (message instanceof JSONObject
+                                    && "open-settings".equals(
+                                            ((JSONObject) message).optString("type"))) {
+                                runOnUiThread(() -> showSettings());
+                            }
+                        }
+                    });
                     sendTweaksSettings();
                 }
             }, "browser");
