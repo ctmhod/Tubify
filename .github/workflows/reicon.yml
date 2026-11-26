@@ -70,7 +70,7 @@ jobs:
               --out "signed-$base" "aligned-$base"
             apksigner verify --print-certs "signed-$base" | head -2
             mv "signed-$base" "out/$base"
-            rm -f "aligned-$base" "$f"
+            rm -f "aligned-$base"
           done
 
       - name: Report versions
