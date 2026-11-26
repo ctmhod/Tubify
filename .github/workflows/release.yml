@@ -170,12 +170,14 @@ jobs:
           path: out
 
       - name: Download smoke evidence (Full)
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: smoke-full
           path: smoke-full
 
       - name: Download smoke evidence (Lite)
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: smoke-lite
