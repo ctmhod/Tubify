@@ -14,7 +14,7 @@ for t in 1 2 3 4 5 6 7 8 9; do
   S=$(grep -o 'text="uBlock Origin: [^"]*"' "$OUT/ui-$t.xml" | head -1)
   log "round $t ($((40+t*20))s): $S"
   echo "$S" | grep -q "active" && break
-  adb shell input keyevent 4; sleep 14; adb shell input keyevent 4
+  adb shell input keyevent 4; sleep 14
 done
 adb shell am start -a android.intent.action.VIEW -d "https://m.youtube.com/results?search_query=music" -p $PKG >/dev/null 2>&1; sleep 40
 timeout 40 adb exec-out screencap -p > "$OUT/search.png" 2>/dev/null
