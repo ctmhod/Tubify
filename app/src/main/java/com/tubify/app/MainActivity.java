@@ -148,7 +148,7 @@ public class MainActivity extends Activity {
                         WebExtension extension, String[] permissions, String[] origins,
                         String[] dataCollectionPermissions) {
                     return GeckoResult.fromValue(
-                            new WebExtension.PermissionPromptResponse(true, null, null));
+                            new WebExtension.PermissionPromptResponse(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
                 }
 
                 @Override
