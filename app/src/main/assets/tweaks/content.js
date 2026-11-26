@@ -15,6 +15,16 @@ const GEAR_CSS =
   "vertical-align:middle;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}" +
   "#tubify-gear:active{background:rgba(90,90,90,0.9);}";
 
+// Always-on: remove YouTube's "Open App" prompts (button in the top bar,
+// watch-metadata app promo, open-app bottom sheets, deep-link anchors).
+const OPENAPP_CSS =
+  'a[href^="vnd.youtube:"], a[href^="intent:"], a[href^="youtube://"],' +
+  "ytm-watch-metadata-app-promo-renderer, ytm-open-app-button-renderer, " +
+  '#open-app-button, ' +
+  '.ytm-bottom-sheet-overlay-renderer-container:has(' +
+  '.ytm-bottom-sheet-overlay-renderer-header[style*="static/open-app"])' +
+  " { display: none !important; }";
+
 const CSS = {
   shorts: [
     'a[href^="/shorts"]',
@@ -54,7 +64,7 @@ function apply(settings) {
   for (const key of Object.keys(CSS)) {
     if (settings[key]) css += CSS[key] + "\n";
   }
-  css += GEAR_CSS;
+  css += OPENAPP_CSS + "\n" + GEAR_CSS;
   if (!styleEl || !styleEl.isConnected) {
     styleEl = document.createElement("style");
     styleEl.id = "tubify-tweaks";
@@ -123,7 +133,21 @@ function insertGear() {
 
 // The masthead renders after document_start and YouTube's SPA re-renders it
 // on navigation; re-insert the gear whenever it disappears.
+// Remove any "Open App" pill the CSS selectors missed (markup changes).
+function sweepOpenApp() {
+  const els = document.querySelectorAll(
+    "ytm-mobile-topbar-renderer a, ytm-mobile-topbar-renderer button, " +
+    "ytm-topbar-menu-button-renderer a, ytm-topbar-menu-button-renderer button");
+  for (const el of els) {
+    const t = (el.textContent || "").trim().toLowerCase();
+    if (t === "open app" || t === "open in app" || t === "get the app") {
+      el.remove();
+    }
+  }
+}
+
 insertGear();
 new MutationObserver(() => {
   if (!document.getElementById(GEAR_ID)) insertGear();
+  sweepOpenApp();
 }).observe(document.documentElement, { childList: true, subtree: true });
