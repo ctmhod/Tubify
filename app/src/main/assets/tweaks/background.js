@@ -30,18 +30,23 @@ const OPENAPP_CSS =
 const CSS = {
   shorts: [
     'a[href^="/shorts"]',
+    'a[href*="youtube.com/shorts"]',
+    'ytm-pivot-bar-item-renderer:has(a[href*="/shorts"])',
+    'ytm-pivot-bar-item-renderer:has(.pivot-shorts)',
     "ytm-reel-shelf-renderer",
     "ytm-rich-shelf-renderer",
     "ytm-shorts-lockup-view-model",
     "ytm-shorts-lockup-view-model-v2",
     "ytm-select-with-timeline-renderer",
-    "ytm-pivot-bar-item-renderer:has(.pivot-shorts)",
     "ytm-rich-section-renderer:has(ytm-shorts-lockup-view-model)",
-    'ytm-video-with-context-renderer:has(a[href^="/shorts"])',
+    "ytm-rich-item-renderer:has(ytm-shorts-lockup-view-model)",
+    'ytm-video-with-context-renderer:has(a[href*="/shorts"])',
+    'ytm-tab-renderer:has(a[href*="/shorts"])',
     "ytd-reel-shelf-renderer",
     "ytd-rich-shelf-renderer",
     "ytd-reel-video-renderer",
-    'ytd-rich-item-renderer:has(a[href^="/shorts"])'
+    'ytd-rich-item-renderer:has(a[href*="/shorts"])',
+    'ytd-tab-renderer:has(a[href*="/shorts"])'
   ].join(", ") + " { display: none !important; }",
   suggestions: [
     "ytm-watch-next-secondary-results-renderer",
