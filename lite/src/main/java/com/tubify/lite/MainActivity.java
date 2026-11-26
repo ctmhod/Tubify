@@ -712,6 +712,19 @@ public class MainActivity extends Activity {
                 mPrefs.getBoolean("home", false),
                 (checked) -> setTweak("home", checked)));
 
+        content.addView(actionRow("Reset to defaults", "Auto theme, ads and Shorts hidden", () -> {
+            mPrefs.edit().putString("theme", "auto").putBoolean("adblock", true)
+                    .putBoolean("shorts", true).putBoolean("suggestions", true)
+                    .putBoolean("comments", false).putBoolean("home", false).apply();
+            resolveTheme();
+            applyYtTheme();
+            injectTweaks();
+            injectAdSkipper();
+            if (mWeb != null) mWeb.reload();
+            dialog.dismiss();
+            showSettings();
+        }));
+
         content.addView(sectionLabel("DEVELOPER"));
         content.addView(linkRow(dialog, "Source code", "github.com/ctmhod/Tubify", "https://github.com/ctmhod/Tubify"));
         content.addView(linkRow(dialog, "Developer", "@ctmhod on Telegram", "https://t.me/ctmhod"));
@@ -933,6 +946,37 @@ public class MainActivity extends Activity {
             w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
         dialog.show();
+    }
+
+
+    private View actionRow(String title, String subtitle, Runnable action) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(COL_CARD);
+        bg.setCornerRadius(dp(16));
+        bg.setStroke(dp(1), COL_BORDER);
+        row.setBackground(bg);
+        row.setPadding(dp(16), dp(12), dp(12), dp(12));
+        row.setMinimumHeight(dp(64));
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        TextView t = new TextView(this);
+        t.setText(title);
+        t.setTextColor(COL_TEXT);
+        t.setTextSize(16);
+        row.addView(t);
+        TextView s = new TextView(this);
+        s.setText(subtitle);
+        s.setTextColor(COL_TEXT2);
+        s.setTextSize(12);
+        s.setPadding(0, dp(2), 0, 0);
+        row.addView(s);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.bottomMargin = dp(8);
+        row.setLayoutParams(lp);
+        row.setOnClickListener(v -> action.run());
+        return row;
     }
 
     private View linkRow(Dialog dialog, String title, String subtitle, String url) {
