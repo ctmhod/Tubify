@@ -82,4 +82,12 @@ yt 23-subscriptions "https://m.youtube.com/feed/subscriptions"
 yt 24-signin "https://accounts.google.com/ServiceLogin?service=youtube"
 yt 25-shorts-link "https://m.youtube.com/shorts/aqz-KE-bpKQ"
 yt 26-channel "https://m.youtube.com/@YouTube"
+log "== 10 DOM dump and themed pages"
+ytx(){ adb shell am force-stop $PKG; adb logcat -c; adb shell am start -a android.intent.action.VIEW -d "$2" -p $PKG --ez tubify_dump_dom true $3 $4 $5 $6 >/dev/null 2>&1; sleep $((W+12)); shot "$1"; adb logcat -d > "$OUT/logcat-$1.txt"; if adb shell pidof $PKG | grep -q .; then log "PASS $1 app alive"; else log "FAIL $1 app not running"; fi; }
+ytx 30-home-dump "https://m.youtube.com/"
+ytx 31-watch-dump "https://m.youtube.com/watch?v=jNQXAC9IVRw"
+ytx 32-home-dark "https://m.youtube.com/" -e tubify_theme dark
+ytx 33-watch-dark "https://m.youtube.com/watch?v=jNQXAC9IVRw"
+ytx 34-home-light "https://m.youtube.com/" -e tubify_theme light
+ytx 35-watch-light "https://m.youtube.com/watch?v=jNQXAC9IVRw"
 log "DONE"
