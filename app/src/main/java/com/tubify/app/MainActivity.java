@@ -138,12 +138,12 @@ public class MainActivity extends Activity {
             }
 
             @Override
-            public GeckoResult<Boolean> onLoadRequest(GeckoSession session,
+            public GeckoResult<AllowOrDeny> onLoadRequest(GeckoSession session,
                     LoadRequest request) {
                 if (request.uri != null && !request.uri.startsWith("http://")
                         && !request.uri.startsWith("https://")) {
                     // Never fire app-launch intents (youtube://, intent://, vnd.youtube:).
-                    return GeckoResult.fromValue(true);
+                    return GeckoResult.fromValue(AllowOrDeny.DENY);
                 }
                 return null;
             }
@@ -499,6 +499,83 @@ public class MainActivity extends Activity {
                 mPrefs.edit().putString(diagKey, want ? "active" : "off").apply();
             }
         });
+    }
+
+    private void showErrorLog() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable boxBg = new GradientDrawable();
+        boxBg.setColor(0xFF1B1B1B);
+        boxBg.setCornerRadius(dp(20));
+        box.setBackground(boxBg);
+        box.setPadding(dp(16), dp(14), dp(16), dp(8));
+
+        TextView title = new TextView(this);
+        title.setText("Error log");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(17);
+        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        box.addView(title);
+
+        TextView body = new TextView(this);
+        body.setText(ErrLog.read());
+        body.setTextColor(0xFFCCCCCC);
+        body.setTextSize(11);
+        body.setTypeface(android.graphics.Typeface.MONOSPACE);
+        body.setTextIsSelectable(true);
+        body.setPadding(0, dp(8), 0, dp(8));
+        android.widget.ScrollView sv = new android.widget.ScrollView(this);
+        sv.addView(body);
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        box.addView(sv, slp);
+
+        LinearLayout btns = new LinearLayout(this);
+        btns.setOrientation(LinearLayout.HORIZONTAL);
+        btns.setGravity(Gravity.END);
+        TextView copy = logButton("Copy");
+        TextView clear = logButton("Clear");
+        TextView close = logButton("Close");
+        copy.setOnClickListener(v -> {
+            android.content.ClipboardManager cm =
+                    (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            cm.setPrimaryClip(android.content.ClipData.newPlainText(
+                    "Tubify error log", ErrLog.read()));
+            android.widget.Toast.makeText(this, "Error log copied",
+                    android.widget.Toast.LENGTH_SHORT).show();
+        });
+        clear.setOnClickListener(v -> {
+            ErrLog.clear();
+            body.setText(ErrLog.read());
+        });
+        close.setOnClickListener(v -> dialog.dismiss());
+        btns.addView(copy);
+        btns.addView(clear);
+        btns.addView(close);
+        box.addView(btns);
+
+        dialog.setContentView(box);
+        Window w = dialog.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.92f);
+            int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.7f);
+            w.setLayout(width, height);
+        }
+        dialog.show();
+    }
+
+    private TextView logButton(String text) {
+        TextView b = new TextView(this);
+        b.setText(text);
+        b.setTextColor(0xFFFF4444);
+        b.setTextSize(14);
+        b.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        b.setPadding(dp(14), dp(10), dp(6), dp(4));
+        return b;
     }
 
     private String buildDiagnostics() {
