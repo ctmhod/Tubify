@@ -630,9 +630,22 @@ public class MainActivity extends Activity {
         sw.setThumbTintList(new ColorStateList(
                 new int[][]{{android.R.attr.state_checked}, {}},
                 new int[]{Color.WHITE, COL_TEXT2}));
-        sw.setTrackTintList(new ColorStateList(
-                new int[][]{{android.R.attr.state_checked}, {}},
-                new int[]{COL_ACCENT, COL_BORDER}));
+        {
+            GradientDrawable on = new GradientDrawable();
+            on.setColor(COL_ACCENT);
+            on.setCornerRadius(dp(14));
+            on.setSize(dp(46), dp(26));
+            GradientDrawable off = new GradientDrawable();
+            off.setColor((COL_TEXT2 & 0x00FFFFFF) | 0x66000000);
+            off.setCornerRadius(dp(14));
+            off.setSize(dp(46), dp(26));
+            android.graphics.drawable.StateListDrawable track =
+                    new android.graphics.drawable.StateListDrawable();
+            track.addState(new int[]{android.R.attr.state_checked}, on);
+            track.addState(new int[]{}, off);
+            sw.setTrackDrawable(track);
+            sw.setTrackTintList(null);
+        }
         sw.setOnCheckedChangeListener((button, isChecked) -> handler.onToggle(isChecked));
         row.addView(sw);
 
