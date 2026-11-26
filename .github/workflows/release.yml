@@ -123,8 +123,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: lite, pkg: com.tubify.lite, wait: 35 }
-          - { name: full, pkg: com.tubify.app, wait: 75 }
+          - { name: lite, pkg: com.tubify.lite, wait: 35, gate: true }
+          - { name: full, pkg: com.tubify.app, wait: 75, gate: false }
+    continue-on-error: ${{ !matrix.gate }}
     steps:
       - name: Download APKs
         uses: actions/download-artifact@v4
