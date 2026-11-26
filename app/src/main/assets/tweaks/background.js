@@ -119,6 +119,23 @@ function relay(msg) {
     browser.storage.local.set({ settings: msg });
   }
 }
+// Forward extension errors to the app's error log.
+function logErr(msg) {
+  try {
+    if (nativePort) {
+      nativePort.postMessage({ type: "log", msg: String(msg).slice(0, 500) });
+    }
+  } catch (e) {}
+}
+window.addEventListener("error", (e) => {
+  logErr("background: " + (e.message || "error")
+    + (e.filename ? " @" + e.filename.split("/").pop() + ":" + e.lineno : ""));
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const r = e.reason;
+  logErr("background promise: " + ((r && r.message) || r));
+});
+
 let nativePort = null;
 function connectApp() {
   let p;
@@ -148,6 +165,9 @@ browser.runtime.onMessage.addListener((msg, sender) => {
   if (msg && msg.type === "tubify-apply" && sender.tab) {
     applied.delete(sender.tab.id);
     applyToTab(sender.tab.id);
+  }
+  if (msg && msg.type === "tubify-log") {
+    logErr("content: " + msg.msg);
   }
   if (msg && msg.type === "tubify-open-settings" && nativePort) {
     try {
