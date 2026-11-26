@@ -66,6 +66,8 @@ public class MainActivity extends Activity {
                     .javaScriptEnabled(true)
                     .build();
             sRuntime = GeckoRuntime.create(this, settings);
+        }
+        {
             mExtController = sRuntime.getWebExtensionController();
             mExtController.setPromptDelegate(new WebExtensionController.PromptDelegate() {
                 @Override
@@ -171,6 +173,7 @@ public class MainActivity extends Activity {
                         syncUbo();
                     } else {
                         mPrefs.edit().putBoolean(TWEAK_KEYS[which - 1], isChecked).apply();
+                        sendTweaksSettings();
                     }
                 })
                 .setPositiveButton("Done", (dialog, which) -> sendTweaksSettings())
@@ -227,11 +230,10 @@ public class MainActivity extends Activity {
                 }
             }
             if (found == null) {
-                if (want && !mPrefs.getBoolean("ubo_tried", false)) {
-                    mPrefs.edit().putBoolean("ubo_tried", true).apply();
+                if (want && !mPrefs.getBoolean("ubo", false)) {
                     mExtController.install(UBO_XPI).accept(
                             installed -> mPrefs.edit().putBoolean("ubo", true).apply(),
-                            error -> mPrefs.edit().putBoolean("ubo_tried", false).apply());
+                            error -> android.util.Log.e("Tubify", "uBlock install failed", error));
                 }
                 return;
             }
