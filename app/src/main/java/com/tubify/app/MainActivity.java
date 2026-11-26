@@ -292,7 +292,7 @@ public class MainActivity extends Activity {
                     mTweaksPort = port;
                     port.setDelegate(new WebExtension.PortDelegate() {
                         @Override
-                        public void onMessage(WebExtension.Port p, Object message) {
+                        public void onPortMessage(Object message, WebExtension.Port p) {
                             if (message instanceof JSONObject
                                     && "open-settings".equals(
                                             ((JSONObject) message).optString("type"))) {
