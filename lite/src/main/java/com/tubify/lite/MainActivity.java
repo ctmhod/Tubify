@@ -70,6 +70,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ErrLog.init(this);
+        logPreviousExits();
         mPrefs = getSharedPreferences("tubify_lite", MODE_PRIVATE);
         applyImmersive();
 
@@ -162,6 +163,15 @@ public class MainActivity extends Activity {
                 startActivity(new Intent(Intent.ACTION_VIEW, u));
             } catch (Exception ignored) {
             }
+            return true;
+        }
+
+        @Override
+        public boolean onRenderProcessGone(WebView view,
+                android.webkit.RenderProcessGoneDetail detail) {
+            ErrLog.log("web", "render process gone, didCrash=" + detail.didCrash());
+            view.destroy();
+            recreate();
             return true;
         }
 
@@ -589,6 +599,40 @@ public class MainActivity extends Activity {
         b.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         b.setPadding(dp(14), dp(10), dp(6), dp(4));
         return b;
+    }
+
+
+    private void logPreviousExits() {
+        // Native/child-process crashes bypass the Java crash handler; on the
+        // next launch, ApplicationExitInfo (API 30+) still tells us what died.
+        if (android.os.Build.VERSION.SDK_INT < 30) {
+            return;
+        }
+        try {
+            android.app.ActivityManager am =
+                    (android.app.ActivityManager) getSystemService(ACTIVITY_SERVICE);
+            java.util.List<android.app.ApplicationExitInfo> exits =
+                    am.getHistoricalProcessExitReasons(getPackageName(), 0, 5);
+            for (android.app.ApplicationExitInfo info : exits) {
+                ErrLog.log("exit", "reason=" + info.getReason() + " status="
+                        + info.getStatus() + " process=" + info.getProcessName()
+                        + " importance=" + info.getImportance()
+                        + (info.getDescription() != null ? " desc=" + info.getDescription() : ""));
+                try {
+                    java.io.InputStream trace = info.getTraceInputStream();
+                    if (trace != null) {
+                        byte[] buf = new byte[700];
+                        int n = trace.read(buf);
+                        trace.close();
+                        if (n > 0) {
+                            ErrLog.log("trace", new String(buf, 0, n, "UTF-8"));
+                        }
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     private void setTweak(String key, boolean checked) {
