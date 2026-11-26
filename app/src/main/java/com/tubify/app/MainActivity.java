@@ -53,6 +53,19 @@ public class MainActivity extends Activity {
                 == android.content.res.Configuration.UI_MODE_NIGHT_YES;
     }
 
+
+    /** Makes YouTube follow the Tubify theme through Gecko's preferred color scheme. */
+    private void applyYtTheme() {
+        try {
+            if (sRuntime == null) return;
+            String t = mPrefs.getString("theme", "auto");
+            int v = t.equals("dark") ? GeckoRuntimeSettings.COLOR_SCHEME_DARK
+                    : t.equals("light") ? GeckoRuntimeSettings.COLOR_SCHEME_LIGHT
+                    : GeckoRuntimeSettings.COLOR_SCHEME_SYSTEM;
+            sRuntime.getSettings().setPreferredColorScheme(v);
+        } catch (Exception ignored) { }
+    }
+
     private void resolveTheme() {
         int[] p = isDark() ? PALETTE_DARK : PALETTE_LIGHT;
         COL_BASE = p[0];
@@ -126,6 +139,7 @@ public class MainActivity extends Activity {
                     .build();
             sRuntime = GeckoRuntime.create(this, settings);
         }
+        applyYtTheme();
         {
             mExtController = sRuntime.getWebExtensionController();
             mExtController.setPromptDelegate(new WebExtensionController.PromptDelegate() {
@@ -525,6 +539,8 @@ public class MainActivity extends Activity {
             opt.setOnClickListener(v -> {
                 mPrefs.edit().putString("theme", keys[idx]).apply();
                 resolveTheme();
+                applyYtTheme();
+                if (mSession != null) mSession.reload();
                 dialog.dismiss();
                 settingsDialog.dismiss();
                 showSettings();
