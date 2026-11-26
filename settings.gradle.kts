@@ -14,3 +14,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "Tubify"
 include(":app")
+include(":lite")
