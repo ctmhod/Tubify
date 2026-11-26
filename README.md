@@ -28,14 +28,20 @@ A minimal YouTube client for Android in two flavors. No ads, no Shorts, no sugge
 ## Install
 
 1. Open [Releases](https://github.com/ctmhod/Tubify/releases) and pick the latest version.
-2. Download the right APK:
-   - **Tubify-vX.Y.Z-arm64-v8a.apk** - most phones from the last years (choose this if unsure)
+2. Download the right APK (universal is listed first on purpose):
+   - **Tubify-vX.Y.Z-0-universal.apk** - works on every device; large (~237 MB, GeckoView inside)
+   - **Tubify-vX.Y.Z-arm64-v8a.apk** - most phones from the last years (~89 MB; choose this if unsure and short on space)
    - **Tubify-vX.Y.Z-armeabi-v7a.apk** - older 32-bit phones
    - **Tubify-vX.Y.Z-x86_64.apk** - emulators and x86 devices
-   - **Tubify-vX.Y.Z-all.apk** - every ABI in one file (much larger)
-   - **Tubify-Lite-vX.Y.Z.apk** - the tiny WebView build, works everywhere
+   - **Tubify-Lite-vX.Y.Z.apk** - the tiny WebView build (~55 KB), works everywhere
 3. Open the APK and allow "install unknown apps" when Android asks.
 4. Full version: on first run, uBlock Origin installs itself from addons.mozilla.org and the page reloads once. Tap the gear in the YouTube header to set your tweaks.
+
+### "App not installed"?
+
+- **Uninstall the old Tubify first.** Early test builds may carry a different signing key, and Android refuses cross-key updates. Your in-app toggles reset; nothing else is lost.
+- **Free space.** The universal APK needs roughly 1 GB free to install (Galaxy Tab A6 owners: the arm64-v8a build needs much less).
+- **Don't downgrade.** Uninstall first if you must go back to an older version.
 
 ## Notes
 
