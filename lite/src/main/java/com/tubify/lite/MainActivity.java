@@ -150,6 +150,9 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String mLastErrUrl = "";
+    private long mLastErrAt = 0;
+
     private class Client extends WebViewClient {
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
@@ -223,7 +226,27 @@ public class MainActivity extends Activity {
                             + error.getDescription() + " " + request.getUrl());
                 }
             }
-            if (request.isForMainFrame() && !isFinishing()) {
+            int code = error != null ? error.getErrorCode() : 0;
+            // Only genuine network failures get the error page: host lookup (-2),
+            // connect (-6), I/O (-7), timeout (-8), SSL handshake (-11), too many
+            // requests (-15). Everything else (aborted navigations, redirects to
+            // app schemes, cache misses) is logged and left alone so a healthy
+            // YouTube page is never replaced by a false error.
+            boolean network = code == -2 || code == -6 || code == -7 || code == -8
+                    || code == -11 || code == -15;
+            if (request.isForMainFrame() && network && !isFinishing()) {
+                String key = request.getUrl().toString();
+                long now = System.currentTimeMillis();
+                if (!key.equals(mLastErrUrl) || now - mLastErrAt > 20000) {
+                    // First failure: one silent retry (flaky radio, DNS hiccup).
+                    mLastErrUrl = key;
+                    mLastErrAt = now;
+                    final WebView wv = view;
+                    wv.postDelayed(() -> wv.loadUrl(key), 1200);
+                    return;
+                }
+                String detail = (error.getDescription() + " (" + code + ")")
+                        .replace("<", "").replace(">", "");
                 // Themed error page instead of the stock WebView error + dialog.
                 String target = request.getUrl().toString().replace("'", "%27");
                 String html = "<!doctype html><meta name=viewport content='width=device-width'>"
@@ -235,6 +258,8 @@ public class MainActivity extends Activity {
                         + "Couldn't load YouTube</div>"
                         + "<div style='color:" + hex(COL_TEXT2) + ";font-size:14px;margin-bottom:28px'>"
                         + "Check your connection and try again.</div>"
+                        + "<div style='color:" + hex(COL_TEXT2) + ";font-size:11px;margin:-18px 24px 24px'>"
+                        + detail + "</div>"
                         + "<a href='" + target + "' style='background:" + hex(COL_CARD) + ";"
                         + "border:1px solid " + hex(COL_BORDER) + ";color:" + hex(COL_TEXT) + ";padding:14px 42px;"
                         + "border-radius:28px;text-decoration:none;font-size:16px'>Retry</a>"
