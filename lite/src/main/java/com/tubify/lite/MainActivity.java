@@ -2,19 +2,21 @@ package com.tubify.lite;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -22,6 +24,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import java.io.ByteArrayInputStream;
@@ -29,7 +33,6 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
     private static final String HOME = "https://m.youtube.com";
-    private static final String[] TWEAK_KEYS = {"shorts", "suggestions", "comments"};
 
     // Network-level ad blocking: substrings matched against every request URL.
     private static final String[] AD_PATTERNS = {
@@ -50,7 +53,7 @@ public class MainActivity extends Activity {
     private WebChromeClient.CustomViewCallback mCustomCallback;
     private SharedPreferences mPrefs;
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,11 +64,6 @@ public class MainActivity extends Activity {
         mWeb = new WebView(this);
         root.addView(mWeb, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-
-        TextView gear = buildGear();
-        FrameLayout.LayoutParams glp = new FrameLayout.LayoutParams(dp(44), dp(44), Gravity.TOP | Gravity.END);
-        glp.setMargins(0, dp(8), dp(8), 0);
-        root.addView(gear, glp);
         setContentView(root);
 
         WebSettings s = mWeb.getSettings();
@@ -86,6 +84,7 @@ public class MainActivity extends Activity {
         cm.setAcceptCookie(true);
         cm.setAcceptThirdPartyCookies(mWeb, true);
 
+        mWeb.addJavascriptInterface(new TubifyJs(), "Tubify");
         mWeb.setWebViewClient(new Client());
         mChrome = new Chrome();
         mWeb.setWebChromeClient(mChrome);
@@ -94,6 +93,13 @@ public class MainActivity extends Activity {
             mWeb.restoreState(savedInstanceState);
         } else {
             mWeb.loadUrl(HOME);
+        }
+    }
+
+    private class TubifyJs {
+        @JavascriptInterface
+        public void openSettings() {
+            runOnUiThread(() -> showSettings());
         }
     }
 
@@ -133,7 +139,7 @@ public class MainActivity extends Activity {
         public void onReceivedError(WebView view, WebResourceRequest request,
                 android.webkit.WebResourceError error) {
             if (request.isForMainFrame() && !isFinishing()) {
-                new AlertDialog.Builder(MainActivity.this)
+                new android.app.AlertDialog.Builder(MainActivity.this)
                         .setTitle("Connection problem")
                         .setMessage("Could not load YouTube. Check your connection.")
                         .setPositiveButton("Retry", (d, w) -> mWeb.reload())
@@ -146,6 +152,7 @@ public class MainActivity extends Activity {
         public void onPageFinished(WebView view, String url) {
             injectTweaks();
             injectAdSkipper();
+            injectGear();
         }
     }
 
@@ -211,6 +218,40 @@ public class MainActivity extends Activity {
         mWeb.evaluateJavascript(js, null);
     }
 
+    // --- Gear button injected into the YouTube header, next to the logo ---
+
+    private void injectGear() {
+        String js = "(function(){"
+                + "if(window.__tubifyGear)return;window.__tubifyGear=1;"
+                + "var ID='tubify-gear';"
+                + "var st=document.createElement('style');st.id='tubify-gear-css';"
+                + "st.textContent='#tubify-gear{display:inline-flex;align-items:center;"
+                + "justify-content:center;width:36px;height:36px;margin-left:8px;padding:0;"
+                + "border:none;border-radius:50%;background:rgba(40,40,40,0.9);color:#fff;"
+                + "font-size:20px;line-height:1;vertical-align:middle;flex:0 0 auto;"
+                + "-webkit-tap-highlight-color:transparent}"
+                + "#tubify-gear:active{background:rgba(90,90,90,0.9)}';"
+                + "(document.head||document.documentElement).appendChild(st);"
+                + "function ins(){"
+                + "if(document.getElementById(ID))return;"
+                + "var logo=document.querySelector('ytm-topbar-logo-renderer, c3-topbar-logo,"
+                + " ytm-mobile-topbar-renderer #logo, a#logo, .mobile-topbar-logo');"
+                + "if(!logo||!logo.parentNode)return;"
+                + "var b=document.createElement('button');b.id=ID;b.type='button';"
+                + "b.setAttribute('aria-label','Tubify Lite settings');"
+                + "b.textContent='\u2699';"
+                + "b.addEventListener('click',function(ev){"
+                + "ev.preventDefault();ev.stopPropagation();"
+                + "try{Tubify.openSettings();}catch(e){}});"
+                + "logo.parentNode.insertBefore(b,logo.nextSibling);}"
+                + "ins();"
+                + "new MutationObserver(function(){"
+                + "if(!document.getElementById(ID))ins();"
+                + "}).observe(document.documentElement,{childList:true,subtree:true});"
+                + "})();";
+        mWeb.evaluateJavascript(js, null);
+    }
+
     // --- Ad skipper: mute + fast-forward skippable/unskippable video ads ---
 
     private void injectAdSkipper() {
@@ -245,50 +286,145 @@ public class MainActivity extends Activity {
         return b.append('\'').toString();
     }
 
-    // --- Gear + settings dialog ------------------------------------------
-
-    private TextView buildGear() {
-        TextView gear = new TextView(this);
-        gear.setText("\u2699");
-        gear.setTextColor(Color.WHITE);
-        gear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-        gear.setGravity(Gravity.CENTER);
-        gear.setContentDescription("Tubify Lite settings");
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0x99000000);
-        bg.setCornerRadius(dp(22));
-        gear.setBackground(bg);
-        gear.setOnClickListener(v -> showSettings());
-        return gear;
-    }
+    // --- Settings sheet (dark, rounded cards, switches) --------------------
 
     private void showSettings() {
-        String[] labels = {
-                "Ad blocking",
-                "Hide Shorts",
-                "Hide suggestions",
-                "Hide comments"
-        };
-        boolean[] checked = {
-                mPrefs.getBoolean("adblock", true),
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout sheet = new LinearLayout(this);
+        sheet.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable sheetBg = new GradientDrawable();
+        sheetBg.setColor(0xFF1B1B1B);
+        sheetBg.setCornerRadius(dp(20));
+        sheet.setBackground(sheetBg);
+        sheet.setPadding(dp(20), dp(18), dp(20), dp(12));
+
+        TextView title = new TextView(this);
+        title.setText("Tubify Lite settings");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(19);
+        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        sheet.addView(title);
+
+        TextView subtitle = new TextView(this);
+        subtitle.setText("Tweaks apply instantly");
+        subtitle.setTextColor(0xFF9E9E9E);
+        subtitle.setTextSize(13);
+        subtitle.setPadding(0, dp(2), 0, dp(14));
+        sheet.addView(subtitle);
+
+        sheet.addView(sectionLabel("BLOCKING"));
+        sheet.addView(settingRow("Ad blocking", "Blocks ad requests, skips video ads",
+                mPrefs.getBoolean("adblock", true), (checked) ->
+                    mPrefs.edit().putBoolean("adblock", checked).apply()));
+
+        sheet.addView(sectionLabel("INTERFACE"));
+        sheet.addView(settingRow("Hide Shorts", null,
                 mPrefs.getBoolean("shorts", true),
+                (checked) -> setTweak("shorts", checked)));
+        sheet.addView(settingRow("Hide suggestions", null,
                 mPrefs.getBoolean("suggestions", true),
-                mPrefs.getBoolean("comments", false)
-        };
-        new AlertDialog.Builder(this)
-                .setTitle("Tubify Lite settings")
-                .setMultiChoiceItems(labels, checked, (dialog, which, isChecked) -> {
-                    if (which == 0) {
-                        mPrefs.edit().putBoolean("adblock", isChecked).apply();
-                    } else {
-                        mPrefs.edit().putBoolean(TWEAK_KEYS[which - 1], isChecked).apply();
-                    }
-                })
-                .setPositiveButton("Done", (dialog, which) -> {
-                    injectTweaks();
-                    injectAdSkipper();
-                })
-                .show();
+                (checked) -> setTweak("suggestions", checked)));
+        sheet.addView(settingRow("Hide comments", null,
+                mPrefs.getBoolean("comments", false),
+                (checked) -> setTweak("comments", checked)));
+
+        TextView done = new TextView(this);
+        done.setText("Done");
+        done.setTextColor(0xFFFF4444);
+        done.setTextSize(15);
+        done.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        done.setGravity(Gravity.CENTER);
+        done.setPadding(dp(16), dp(12), dp(4), dp(4));
+        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        dlp.gravity = Gravity.END;
+        dlp.topMargin = dp(6);
+        sheet.addView(done, dlp);
+        done.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.setContentView(sheet);
+        Window w = dialog.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.92f);
+            w.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        dialog.show();
+    }
+
+    private void setTweak(String key, boolean checked) {
+        mPrefs.edit().putBoolean(key, checked).apply();
+        injectTweaks();
+        injectAdSkipper();
+    }
+
+    private TextView sectionLabel(String text) {
+        TextView label = new TextView(this);
+        label.setText(text);
+        label.setTextColor(0xFF8A8A8A);
+        label.setTextSize(12);
+        label.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        label.setLetterSpacing(0.08f);
+        label.setPadding(dp(2), dp(8), 0, dp(6));
+        return label;
+    }
+
+    private interface ToggleHandler {
+        void onToggle(boolean checked);
+    }
+
+    private View settingRow(String title, String subtitle,
+            boolean checked, ToggleHandler handler) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        GradientDrawable rowBg = new GradientDrawable();
+        rowBg.setColor(0xFF2A2A2A);
+        rowBg.setCornerRadius(dp(14));
+        row.setBackground(rowBg);
+        row.setPadding(dp(16), dp(10), dp(12), dp(10));
+
+        LinearLayout texts = new LinearLayout(this);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        TextView label = new TextView(this);
+        label.setText(title);
+        label.setTextColor(Color.WHITE);
+        label.setTextSize(16);
+        texts.addView(label);
+        if (subtitle != null) {
+            TextView sub = new TextView(this);
+            sub.setText(subtitle);
+            sub.setTextColor(0xFF9E9E9E);
+            sub.setTextSize(12);
+            sub.setPadding(0, dp(1), 0, 0);
+            texts.addView(sub);
+        }
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        row.addView(texts, tlp);
+
+        Switch sw = new Switch(this);
+        sw.setShowText(false);
+        sw.setSwitchMinWidth(dp(44));
+        sw.setThumbTintList(new ColorStateList(
+                new int[][]{{android.R.attr.state_checked}, {}},
+                new int[]{Color.WHITE, 0xFFBDBDBD}));
+        sw.setTrackTintList(new ColorStateList(
+                new int[][]{{android.R.attr.state_checked}, {}},
+                new int[]{0xFFFF4444, 0xFF4A4A4A}));
+        sw.setOnCheckedChangeListener((button, isChecked) -> handler.onToggle(isChecked));
+        row.addView(sw);
+
+        sw.setChecked(checked);
+        row.setOnClickListener(v -> sw.toggle());
+
+        LinearLayout wrap = new LinearLayout(this);
+        wrap.setOrientation(LinearLayout.VERTICAL);
+        wrap.addView(row);
+        wrap.setPadding(0, 0, 0, dp(8));
+        return wrap;
     }
 
     // --- Activity plumbing ------------------------------------------------
