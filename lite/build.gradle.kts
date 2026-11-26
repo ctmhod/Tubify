@@ -8,10 +8,10 @@ android {
 
     defaultConfig {
         applicationId = "com.tubify.lite"
-        minSdk = 26
+        minSdk = 29
         targetSdk = 36
-        versionCode = 15
-        versionName = "0.1.15"
+        versionCode = 16
+        versionName = "0.1.16"
         resourceConfigurations.add("en")
     }
 
