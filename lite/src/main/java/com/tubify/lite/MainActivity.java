@@ -40,11 +40,14 @@ public class MainActivity extends Activity {
             "googlesyndication.com",
             "googleadservices.com",
             "adservice.google.",
+            "ads.youtube.com",
             "youtube.com/api/stats/ads",
             "youtube.com/pagead/",
             "youtube.com/ptracking",
             "youtube.com/get_midroll",
-            "/ad_break"
+            "youtube.com/ad_break",
+            "youtube.com/ytcs/ad",
+            "youtube.com/ads/"
     };
 
     private WebView mWeb;
@@ -107,6 +110,11 @@ public class MainActivity extends Activity {
     private class Client extends WebViewClient {
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+            if (request.getUrl() != null && request.getUrl().getHost() != null
+                    && request.getUrl().getHost().endsWith("googlevideo.com")) {
+                // Media streams: never intercept (range requests, CORS, playback).
+                return super.shouldInterceptRequest(view, request);
+            }
             if (mPrefs.getBoolean("adblock", true) && request.getUrl() != null) {
                 String url = request.getUrl().toString().toLowerCase(Locale.US);
                 for (String p : AD_PATTERNS) {
@@ -128,6 +136,12 @@ public class MainActivity extends Activity {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             Uri u = request.getUrl();
+            String scheme = u.getScheme() == null ? "" : u.getScheme();
+            if (scheme.equals("intent") || scheme.equals("youtube")
+                    || scheme.equals("vnd.youtube") || scheme.equals("market")) {
+                // Never fire app-launch intents.
+                return true;
+            }
             String h = u.getHost() == null ? "" : u.getHost();
             if (h.endsWith("youtube.com") || h.endsWith("googlevideo.com")
                     || h.endsWith("ytimg.com") || h.endsWith("ggpht.com")
@@ -253,6 +267,18 @@ public class MainActivity extends Activity {
                 + "ytd-watch-next-secondary-results-renderer,#related{display:none!important}");
         if (comments) css.append(
                 "ytm-comment-section-renderer,ytd-comments,#comments{display:none!important}");
+        // Cosmetic ad hiding (only while ad blocking is on) and the always-on
+        // removal of YouTube's "Open App" prompts.
+        if (mPrefs.getBoolean("adblock", true)) {
+            css.append("ytm-ad-slot-renderer,ytm-promoted-sparkles-web-renderer,"
+                    + "ytm-in-feed-ad-layout-renderer,ytm-promoted-video-renderer,"
+                    + "ytm-compact-promoted-video-renderer,ytm-display-ad-renderer,"
+                    + ".video-ads,.ytp-ad-module,.ytp-ad-overlay-container,"
+                    + ".ytp-ad-message-overlay,#player-ads{display:none!important}");
+        }
+        css.append("a[href^=\"vnd.youtube:\"],a[href^=\"intent:\"],a[href^=\"youtube://\"],"
+                + "ytm-watch-metadata-app-promo-renderer,ytm-open-app-button-renderer,"
+                + "#open-app-button{display:none!important}");
         String js = "(function(){var e=document.getElementById('tubify-tweaks');"
                 + "if(!e){e=document.createElement('style');e.id='tubify-tweaks';"
                 + "(document.head||document.documentElement).appendChild(e);}"
@@ -298,6 +324,10 @@ public class MainActivity extends Activity {
 
     private void injectAdSkipper() {
         if (!mPrefs.getBoolean("adblock", true)) return;
+        // Reacts fast to ad pods: mute + fast-forward the ad video, click any
+        // skip/close control. Limit: the ad may play muted for a fraction of a
+        // second before the timer catches it; streamed (SABR) ads baked into
+        // the media cannot be removed by a WebView at all.
         String js = "(function(){if(window.__tubifySkip)return;window.__tubifySkip=1;"
                 + "setInterval(function(){try{"
                 + "var ad=document.querySelector('.ad-showing,.ad-interrupting');"
@@ -305,11 +335,12 @@ public class MainActivity extends Activity {
                 + "if(ad&&v){v.muted=true;if(isFinite(v.duration)&&v.duration>0){"
                 + "v.currentTime=v.duration;}v.playbackRate=16;}"
                 + "var b=document.querySelector('.ytp-skip-ad-button,.ytp-ad-skip-button,"
-                + ".ytp-ad-skip-button-modern,button.ytp-ad-overlay-close-button');"
+                + ".ytp-ad-skip-button-modern,.ytp-ad-skip-button-slot button,"
+                + "button.ytp-ad-overlay-close-button');"
                 + "if(b){b.click();}"
                 + "var ov=document.querySelector('.ytp-ad-overlay-close-button');"
                 + "if(ov){ov.click();}"
-                + "}catch(e){}},700);})();";
+                + "}catch(e){}},350);})();";
         mWeb.evaluateJavascript(js, null);
     }
 
