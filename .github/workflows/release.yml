@@ -90,6 +90,8 @@ jobs:
           done
           echo "== out/Tubify-Lite-v0.1.0.apk =="
           L=out/Tubify-Lite-v0.1.0.apk
+          stat -c%s "$L"
+          unzip -l "$L"
           test $(stat -c%s "$L") -lt 1000000
           test -z "$(unzip -l "$L" | grep 'lib/')"
           unzip -p "$L" classes.dex | strings | grep -q 'm.youtube.com'
