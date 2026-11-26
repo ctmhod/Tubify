@@ -51,6 +51,33 @@ public class MainActivity extends Activity {
                 == android.content.res.Configuration.UI_MODE_NIGHT_YES;
     }
 
+
+    /** Makes YouTube itself follow the Tubify theme via its own PREF cookie (f6: 400 dark, 80000 light). */
+    private void applyYtTheme() {
+        try {
+            CookieManager cm = CookieManager.getInstance();
+            String all = cm.getCookie("https://m.youtube.com");
+            String pref = "";
+            if (all != null) {
+                for (String part : all.split(";")) {
+                    part = part.trim();
+                    if (part.startsWith("PREF=")) pref = part.substring(5);
+                }
+            }
+            StringBuilder sb = new StringBuilder();
+            for (String kv : pref.split("&")) {
+                if (kv.isEmpty() || kv.startsWith("f6=")) continue;
+                if (sb.length() > 0) sb.append('&');
+                sb.append(kv);
+            }
+            if (sb.length() > 0) sb.append('&');
+            sb.append("f6=").append(isDark() ? "400" : "80000");
+            cm.setCookie("https://m.youtube.com", "PREF=" + sb
+                    + "; Domain=.youtube.com; Path=/; Max-Age=31536000; Secure");
+            cm.flush();
+        } catch (Exception ignored) { }
+    }
+
     private void resolveTheme() {
         int[] p = isDark() ? PALETTE_DARK : PALETTE_LIGHT;
         COL_BASE = p[0];
@@ -131,6 +158,7 @@ public class MainActivity extends Activity {
         cm.setAcceptCookie(true);
         cm.setAcceptThirdPartyCookies(mWeb, true);
 
+        applyYtTheme();
         mWeb.addJavascriptInterface(new TubifyJs(), "Tubify");
         mWeb.setWebViewClient(new Client());
         mChrome = new Chrome();
@@ -321,8 +349,22 @@ public class MainActivity extends Activity {
             injectTweaks();
             injectAdSkipper();
             injectGear();
+            if (getIntent().getBooleanExtra("tubify_dump_dom", false)) {
+                final WebView wv = view;
+                wv.postDelayed(() -> wv.evaluateJavascript(DUMP_JS, null), 9000);
+            }
         }
     }
+
+    private static final String DUMP_JS = "(function(){var c={};document.querySelectorAll('*').forEach(function(e){"
+            + "var t=e.tagName.toLowerCase();if(t.indexOf('-')>0)c[t]=(c[t]||0)+1;});"
+            + "var s=Object.keys(c).sort().map(function(k){return k+':'+c[k];}).join(' ');"
+            + "for(var i=0;i<s.length;i+=3000)console.log('TUBIFY_DOM tags '+s.substr(i,3000));"
+            + "var m=[];document.querySelectorAll('[id],[section-identifier],[target-id]').forEach(function(e){"
+            + "var k=(e.id||'')+'|'+(e.getAttribute('section-identifier')||'')+'|'+(e.getAttribute('target-id')||'');"
+            + "if(/comment|related|watch-next|secondary|shorts|reel/i.test(k+e.tagName))m.push(e.tagName.toLowerCase()+'#'+k);});"
+            + "console.log('TUBIFY_DOM attrs '+m.slice(0,60).join(' '));"
+            + "console.log('TUBIFY_DOM url '+location.href+' dark='+document.documentElement.hasAttribute('dark'));})();";
 
     private class Chrome extends WebChromeClient {
         @Override
@@ -856,6 +898,8 @@ public class MainActivity extends Activity {
             opt.setOnClickListener(v -> {
                 mPrefs.edit().putString("theme", keys[idx]).apply();
                 resolveTheme();
+                applyYtTheme();
+                if (mWeb != null) mWeb.reload();
                 dialog.dismiss();
                 settingsDialog.dismiss();
                 showSettings();
