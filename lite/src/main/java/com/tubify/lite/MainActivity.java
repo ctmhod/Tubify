@@ -224,12 +224,22 @@ public class MainActivity extends Activity {
                 }
             }
             if (request.isForMainFrame() && !isFinishing()) {
-                new android.app.AlertDialog.Builder(MainActivity.this)
-                        .setTitle("Connection problem")
-                        .setMessage("Could not load YouTube. Check your connection.")
-                        .setPositiveButton("Retry", (d, w) -> mWeb.reload())
-                        .setNegativeButton("Close", (d, w) -> finish())
-                        .show();
+                // Themed error page instead of the stock WebView error + dialog.
+                String target = request.getUrl().toString().replace("'", "%27");
+                String html = "<!doctype html><meta name=viewport content='width=device-width'>"
+                        + "<body style='margin:0;background:" + hex(COL_BASE) + ";color:" + hex(COL_TEXT) + ";"
+                        + "font-family:sans-serif;display:flex;flex-direction:column;"
+                        + "align-items:center;justify-content:center;height:100vh;text-align:center'>"
+                        + "<div style='font-size:64px;font-weight:bold;color:" + hex(COL_ACCENT) + "'>T</div>"
+                        + "<div style='font-size:20px;font-weight:bold;margin:16px 0 8px'>"
+                        + "Couldn't load YouTube</div>"
+                        + "<div style='color:" + hex(COL_TEXT2) + ";font-size:14px;margin-bottom:28px'>"
+                        + "Check your connection and try again.</div>"
+                        + "<a href='" + target + "' style='background:" + hex(COL_CARD) + ";"
+                        + "border:1px solid " + hex(COL_BORDER) + ";color:" + hex(COL_TEXT) + ";padding:14px 42px;"
+                        + "border-radius:28px;text-decoration:none;font-size:16px'>Retry</a>"
+                        + "</body>";
+                view.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
             }
         }
 
@@ -265,6 +275,13 @@ public class MainActivity extends Activity {
             }
             String m = msg.message();
             String low = m.toLowerCase(Locale.US);
+            // Harmless YouTube/Google page noise that would bury real errors.
+            if (low.contains("require-trusted-types-for")
+                    || low.contains("x-frame-options")
+                    || low.contains("link preload")
+                    || low.contains("is not recognized and ignored")) {
+                return false;
+            }
             for (String p : AD_PATTERNS) {
                 if (low.contains(p)) {
                     // Expected noise from blocked ad requests (CORS, ERR_BLOCKED).
