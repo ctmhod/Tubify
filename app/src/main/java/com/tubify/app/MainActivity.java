@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.net.Uri;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -169,7 +170,24 @@ public class MainActivity extends Activity {
                     WebRequestError error) {
                 ErrLog.log("page", "load error "
                         + (error != null ? error.category + "/" + error.code : "") + " " + uri);
-                return null;
+                if (uri == null || !uri.startsWith("http")) {
+                    return null;
+                }
+                String html = "<!doctype html><meta name=viewport content='width=device-width'>"
+                        + "<body style='margin:0;background:#07080D;color:#E8EAF0;"
+                        + "font-family:sans-serif;display:flex;flex-direction:column;"
+                        + "align-items:center;justify-content:center;height:100vh;text-align:center'>"
+                        + "<div style='font-size:64px;font-weight:bold;color:#FF4444'>T</div>"
+                        + "<div style='font-size:20px;font-weight:bold;margin:16px 0 8px'>"
+                        + "Couldn't load YouTube</div>"
+                        + "<div style='color:#8A90A0;font-size:14px;margin-bottom:28px'>"
+                        + "Check your connection and try again.</div>"
+                        + "<a href='" + uri.replace("'", "%27") + "' style='background:#12141C;"
+                        + "border:1px solid #20232E;color:#E8EAF0;padding:14px 42px;"
+                        + "border-radius:28px;text-decoration:none;font-size:16px'>Retry</a>"
+                        + "</body>";
+                return GeckoResult.fromValue(
+                        "data:text/html;charset=utf-8," + Uri.encode(html, ":/#?&='+"));
             }
         });
 
