@@ -268,6 +268,9 @@ public class MainActivity extends Activity {
         sheet.addView(settingRow(dialog, "Hide comments", null,
                 mPrefs.getBoolean("comments", false),
                 (checked) -> setTweak("comments", checked)));
+        sheet.addView(settingRow(dialog, "Hide home feed", "Start on a blank home",
+                mPrefs.getBoolean("home", false),
+                (checked) -> setTweak("home", checked)));
 
         sheet.addView(sectionLabel("DEVELOPER"));
         TextView errRow = new TextView(this);
@@ -468,6 +471,7 @@ public class MainActivity extends Activity {
             msg.put("shorts", mPrefs.getBoolean("shorts", true));
             msg.put("suggestions", mPrefs.getBoolean("suggestions", true));
             msg.put("comments", mPrefs.getBoolean("comments", false));
+            msg.put("home", mPrefs.getBoolean("home", false));
             mTweaksPort.postMessage(msg);
         } catch (JSONException ignored) {
         }
