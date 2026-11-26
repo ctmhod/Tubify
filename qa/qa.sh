@@ -9,7 +9,7 @@ has(){ grep -q "text=\"$2\"" "$OUT/$1.xml" && log "PASS $1 has '$2'" || log "FAI
 tap(){ dump cur; P=$(python3 "$(dirname "$0")/tap.py" "$OUT/cur.xml" "$1") && adb shell input tap $P && log "tapped '$1' at $P" || log "FAIL cannot find '$1' to tap"; sleep 1.5; }
 checked(){ dump c; grep -o 'checked="true"' "$OUT/c.xml" | wc -l; }
 launch_settings(){ adb shell am force-stop $PKG; adb shell am start -n $PKG/.MainActivity -e tubify_theme "$1" --ez tubify_open_settings true >/dev/null; sleep $W; }
-fatal(){ adb logcat -d > "$OUT/logcat-$1.txt"; if grep -q "FATAL EXCEPTION" "$OUT/logcat-$1.txt"; then log "FAIL $1 FATAL EXCEPTION"; grep -A8 "FATAL EXCEPTION" "$OUT/logcat-$1.txt" | head -20 >> "$R"; else log "PASS $1 no fatal exception"; fi; adb logcat -c; }
+fatal(){ adb logcat -d > "$OUT/logcat-$1.txt"; if grep -A2 "FATAL EXCEPTION" "$OUT/logcat-$1.txt" | grep -q "Process: $PKG"; then log "FAIL $1 FATAL EXCEPTION"; grep -A8 "FATAL EXCEPTION" "$OUT/logcat-$1.txt" | head -20 >> "$R"; else log "PASS $1 no fatal exception"; fi; adb logcat -c; }
 
 log "== 1 upgrade: install OLD then NEW over it"
 adb uninstall $PKG >/dev/null 2>&1
