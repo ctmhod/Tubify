@@ -50,6 +50,9 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
+            // Crash reporter native libs: GeckoRuntime handles their absence
+            // gracefully (no crash reporting, everything else unaffected).
+            excludes += setOf("**/libcrashhelper.so", "**/libcrashtools.so")
         }
     }
 
