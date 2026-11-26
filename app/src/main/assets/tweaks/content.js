@@ -23,6 +23,8 @@ const CSS = {
     "ytm-shorts-lockup-view-model",
     "ytm-shorts-lockup-view-model-v2",
     "ytm-select-with-timeline-renderer",
+    "ytm-pivot-bar-item-renderer:has(.pivot-shorts)",
+    "ytm-rich-section-renderer:has(ytm-shorts-lockup-view-model)",
     'ytm-video-with-context-renderer:has(a[href^="/shorts"])',
     "ytd-reel-shelf-renderer",
     "ytd-rich-shelf-renderer",
@@ -33,6 +35,7 @@ const CSS = {
     "ytm-watch-next-secondary-results-renderer",
     "ytm-related-chip-cloud-renderer",
     'ytm-item-section-renderer[section-identifier="related-items"]',
+    'ytm-item-section-renderer[section-identifier="watch-next-feed"]',
     "ytd-watch-next-secondary-results-renderer",
     "#related"
   ].join(", ") + " { display: none !important; }",
