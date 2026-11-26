@@ -661,6 +661,8 @@ public class MainActivity extends Activity {
         errBg.setStroke(dp(1), COL_BORDER);
         errRow.setBackground(errBg);
         errRow.setPadding(dp(16), dp(12), dp(12), dp(12));
+        errRow.setMinimumHeight(dp(64));
+        errRow.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout.LayoutParams elp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         elp.bottomMargin = dp(8);
@@ -803,6 +805,8 @@ public class MainActivity extends Activity {
         bg.setStroke(dp(1), COL_BORDER);
         row.setBackground(bg);
         row.setPadding(dp(16), dp(12), dp(12), dp(12));
+        row.setMinimumHeight(dp(64));
+        row.setGravity(Gravity.CENTER_VERTICAL);
         TextView t = new TextView(this);
         t.setText("Theme");
         t.setTextColor(COL_TEXT);
@@ -874,6 +878,8 @@ public class MainActivity extends Activity {
         bg.setStroke(dp(1), COL_BORDER);
         row.setBackground(bg);
         row.setPadding(dp(16), dp(12), dp(12), dp(12));
+        row.setMinimumHeight(dp(64));
+        row.setGravity(Gravity.CENTER_VERTICAL);
         TextView t = new TextView(this);
         t.setText(title);
         t.setTextColor(COL_TEXT);
@@ -926,7 +932,9 @@ public class MainActivity extends Activity {
         rowBg.setCornerRadius(dp(16));
         rowBg.setStroke(dp(1), COL_BORDER);
         row.setBackground(rowBg);
-        row.setPadding(dp(16), dp(10), dp(12), dp(10));
+        row.setPadding(dp(16), dp(12), dp(12), dp(12));
+        row.setMinimumHeight(dp(64));
+        row.setGravity(Gravity.CENTER_VERTICAL);
 
         LinearLayout texts = new LinearLayout(this);
         texts.setOrientation(LinearLayout.VERTICAL);
@@ -940,7 +948,7 @@ public class MainActivity extends Activity {
             sub.setText(subtitle);
             sub.setTextColor(COL_TEXT2);
             sub.setTextSize(12);
-            sub.setPadding(0, dp(1), 0, 0);
+            sub.setPadding(0, dp(2), 0, 0);
             texts.addView(sub);
         }
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
