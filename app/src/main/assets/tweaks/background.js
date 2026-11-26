@@ -12,10 +12,10 @@ const DEFAULTS = { shorts: true, suggestions: true, comments: false };
 // YouTube header next to the logo.
 const GEAR_CSS =
   "#tubify-gear{display:inline-flex;align-items:center;justify-content:center;" +
-  "width:36px;height:36px;margin-left:8px;padding:0;border:none;border-radius:50%;" +
-  "background:rgba(40,40,40,0.9);color:#fff;font-size:20px;line-height:1;" +
+  "width:36px;height:36px;margin-left:8px;padding:0;border:1px solid #20232E;border-radius:50%;" +
+  "background:#12141C;color:#E8EAF0;font-size:20px;line-height:1;" +
   "vertical-align:middle;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}" +
-  "#tubify-gear:active{background:rgba(90,90,90,0.9);}";
+  "#tubify-gear:active{background:#20232E;}";
 
 // Always-on: remove YouTube's "Open App" prompts (button in the top bar,
 // watch-metadata app promo, open-app bottom sheets, deep-link anchors).
