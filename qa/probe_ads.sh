@@ -14,14 +14,14 @@ adb install -r "$NEW" >/dev/null 2>&1 && log "new installed"
 view "$SEARCH"; sleep 45; shot logo-new
 # let uBlock install and finish
 sleep 90
-adb shell am force-stop $PKG; adb shell am start -n $PKG/.MainActivity --ez tubify_open_settings true >/dev/null; sleep 20
+adb shell am force-stop $PKG; adb shell am start -n $PKG/.MainActivity >/dev/null; sleep 25; adb shell input tap 122 24; sleep 6
 adb shell input swipe 160 500 160 100 300; adb shell input swipe 160 500 160 100 300; adb shell input swipe 160 500 160 100 300; sleep 1
 dump s-on; shot settings-on
 log "diag: $(grep -o 'uBlock Origin: [a-zA-Z ]*' $OUT/s-on.xml | head -1)"
 view "$ADTEST"; sleep 60; shot ads-on-1
 adb shell input swipe 160 450 160 150 400; sleep 3; shot ads-on-2
 # turn uBlock off
-adb shell am force-stop $PKG; adb shell am start -n $PKG/.MainActivity --ez tubify_open_settings true >/dev/null; sleep 20
+adb shell am force-stop $PKG; adb shell am start -n $PKG/.MainActivity >/dev/null; sleep 25; adb shell input tap 122 24; sleep 6
 dump s1
 P=$(python3 "$(dirname "$0")/tap.py" "$OUT/s1.xml" "uBlock Origin") && adb shell input tap $P && log "tapped uBlock row at $P" || log "FAIL no uBlock row"
 sleep 8
