@@ -17,6 +17,16 @@ const GEAR_CSS =
   "vertical-align:middle;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}" +
   "#tubify-gear:active{background:rgba(90,90,90,0.9);}";
 
+// Always-on: remove YouTube's "Open App" prompts (button in the top bar,
+// watch-metadata app promo, open-app bottom sheets, deep-link anchors).
+const OPENAPP_CSS =
+  'a[href^="vnd.youtube:"], a[href^="intent:"], a[href^="youtube://"],' +
+  "ytm-watch-metadata-app-promo-renderer, ytm-open-app-button-renderer, " +
+  '#open-app-button, ' +
+  '.ytm-bottom-sheet-overlay-renderer-container:has(' +
+  '.ytm-bottom-sheet-overlay-renderer-header[style*="static/open-app"])' +
+  " { display: none !important; }";
+
 const CSS = {
   shorts: [
     'a[href^="/shorts"]',
@@ -58,7 +68,7 @@ function cssFor(s) {
   for (const key of Object.keys(CSS)) {
     if (s[key]) css += CSS[key] + "\n";
   }
-  return css + GEAR_CSS;
+  return css + OPENAPP_CSS + "\n" + GEAR_CSS;
 }
 
 function isYouTube(url) {
