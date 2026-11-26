@@ -317,7 +317,7 @@ public class MainActivity extends Activity {
                     + "ytm-in-feed-ad-layout-renderer,ytm-promoted-video-renderer,"
                     + "ytm-compact-promoted-video-renderer,ytm-display-ad-renderer,"
                     + ".video-ads,.ytp-ad-module,.ytp-ad-overlay-container,"
-                    + ".ytp-ad-message-overlay,#player-ads,'
+                    + ".ytp-ad-message-overlay,#player-ads,"
                     + "ad-slot-renderer,lazy-list>ad-slot-renderer,"
                     + "ytm-rich-item-renderer>ad-slot-renderer,"
                     + "ytm-companion-slot,ytm-companion-ad-renderer{display:none!important}");
