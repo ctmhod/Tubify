@@ -272,11 +272,19 @@ public class MainActivity extends Activity {
         boolean comments = mPrefs.getBoolean("comments", false);
         StringBuilder css = new StringBuilder();
         if (shorts) css.append(
-                "a[href^=\"/shorts\"],ytm-reel-shelf-renderer,ytm-rich-shelf-renderer,"
+                "a[href^=\"/shorts\"],a[href*=\"youtube.com/shorts\"],"
+                + "ytm-pivot-bar-item-renderer:has(a[href*=\"/shorts\"]),"
+                + "ytm-pivot-bar-item-renderer:has(.pivot-shorts),"
+                + "ytm-reel-shelf-renderer,ytm-rich-shelf-renderer,"
                 + "ytm-shorts-lockup-view-model,ytm-shorts-lockup-view-model-v2,"
-                + "ytm-video-with-context-renderer:has(a[href^=\"/shorts\"]),"
+                + "ytm-select-with-timeline-renderer,"
+                + "ytm-rich-section-renderer:has(ytm-shorts-lockup-view-model),"
+                + "ytm-rich-item-renderer:has(ytm-shorts-lockup-view-model),"
+                + "ytm-video-with-context-renderer:has(a[href*=\"/shorts\"]),"
+                + "ytm-tab-renderer:has(a[href*=\"/shorts\"]),"
                 + "ytd-reel-shelf-renderer,ytd-rich-shelf-renderer,ytd-reel-video-renderer,"
-                + "ytd-rich-item-renderer:has(a[href^=\"/shorts\"])"
+                + "ytd-rich-item-renderer:has(a[href*=\"/shorts\"]),"
+                + "ytd-tab-renderer:has(a[href*=\"/shorts\"])"
                 + "{display:none!important}");
         if (suggestions) css.append(
                 "ytm-watch-next-secondary-results-renderer,ytm-related-chip-cloud-renderer,"
