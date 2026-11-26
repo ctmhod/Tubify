@@ -7,7 +7,7 @@ log(){ echo "$*" | tee -a "$R"; }
 shot(){ timeout 60 adb shell screencap -p /sdcard/s.png; timeout 60 adb pull /sdcard/s.png "$OUT/$1.png" >/dev/null 2>&1 || true; }
 dump(){ timeout 60 adb shell uiautomator dump /sdcard/u.xml >/dev/null 2>&1; adb pull /sdcard/u.xml "$OUT/$1.xml" >/dev/null 2>&1 || true; }
 has(){ grep -q "text=\"$2\"" "$OUT/$1.xml" && log "PASS $1 has '$2'" || log "FAIL $1 missing '$2'"; }
-tap(){ dump cur; P=$(python3 "$(dirname "$0")/tap.py" "$OUT/cur.xml" "$1") && adb shell input tap $P && log "tapped '$1' at $P" || log "FAIL cannot find '$1' to tap"; sleep 1.5; }
+tap(){ for i in 1 2 3 4 5; do dump cur; if P=$(python3 "$(dirname "$0")/tap.py" "$OUT/cur.xml" "$1"); then adb shell input tap $P; log "tapped '$1' at $P"; sleep 1.5; return 0; fi; if [ $i -le 2 ]; then adb shell input swipe 160 500 160 250 300; else adb shell input swipe 160 250 160 550 300; fi; sleep 1; done; log "FAIL cannot find '$1' to tap"; sleep 1.5; }
 checked(){ dump c; grep -o 'checked="true"' "$OUT/c.xml" | wc -l; }
 launch_settings(){ adb shell am force-stop $PKG; adb shell am start -n $PKG/.MainActivity -e tubify_theme "$1" --ez tubify_open_settings true >/dev/null; sleep $W; }
 fatal(){ adb logcat -d > "$OUT/logcat-$1.txt"; if grep -A2 "FATAL EXCEPTION" "$OUT/logcat-$1.txt" | grep -q "Process: $PKG"; then log "FAIL $1 FATAL EXCEPTION"; grep -A8 "FATAL EXCEPTION" "$OUT/logcat-$1.txt" | head -20 >> "$R"; else log "PASS $1 no fatal exception"; fi; adb logcat -c; }
