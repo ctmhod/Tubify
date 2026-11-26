@@ -274,6 +274,9 @@ public class MainActivity extends Activity {
                 "ytm-watch-next-secondary-results-renderer,ytm-related-chip-cloud-renderer,"
                 + "ytm-item-section-renderer[section-identifier=\"related-items\"],"
                 + "ytd-watch-next-secondary-results-renderer,#related{display:none!important}");
+        if (mPrefs.getBoolean("home", false)) css.append(
+                ".tubify-home ytm-rich-grid-renderer,.tubify-home ytm-rich-section-renderer,"
+                + ".tubify-home ytm-single-column-browse-results-renderer{display:none!important}");
         if (comments) css.append(
                 "ytm-comment-section-renderer,ytd-comments,#comments{display:none!important}");
         // Cosmetic ad hiding (only while ad blocking is on) and the always-on
@@ -322,8 +325,12 @@ public class MainActivity extends Activity {
                 + "try{Tubify.openSettings();}catch(e){}});"
                 + "logo.parentNode.insertBefore(b,logo.nextSibling);}"
                 + "ins();"
+                + "var LP=null;"
+                + "function pc(){var p=location.pathname;if(p===LP)return;LP=p;"
+                + "document.documentElement.classList.toggle('tubify-home',p==='/');}"
+                + "pc();"
                 + "new MutationObserver(function(){"
-                + "if(!document.getElementById(ID))ins();"
+                + "if(!document.getElementById(ID))ins();pc();"
                 + "}).observe(document.documentElement,{childList:true,subtree:true});"
                 + "})();";
         mWeb.evaluateJavascript(js, null);
@@ -427,6 +434,9 @@ public class MainActivity extends Activity {
         sheet.addView(settingRow("Hide comments", null,
                 mPrefs.getBoolean("comments", false),
                 (checked) -> setTweak("comments", checked)));
+        sheet.addView(settingRow("Hide home feed", "Start on a blank home",
+                mPrefs.getBoolean("home", false),
+                (checked) -> setTweak("home", checked)));
 
         sheet.addView(sectionLabel("DEVELOPER"));
         TextView errRow = new TextView(this);
