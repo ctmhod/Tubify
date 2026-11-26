@@ -95,4 +95,5 @@ ytx 40-watch-comments-hidden "https://m.youtube.com/watch?v=jNQXAC9IVRw" --ez tu
 ytx 41-watch-comments-shown "https://m.youtube.com/watch?v=jNQXAC9IVRw" --ez tubify_comments false
 ytx 42-search-shorts-on "https://m.youtube.com/results?search_query=music" --ez tubify_shorts true
 ytx 43-search-shorts-off "https://m.youtube.com/results?search_query=music" --ez tubify_shorts false
+ytx 44-logo "https://m.youtube.com/results?search_query=music"
 log "DONE"
