@@ -57,6 +57,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ErrLog.init(this);
         mPrefs = getSharedPreferences("tubify_lite", MODE_PRIVATE);
         applyImmersive();
 
@@ -138,6 +139,10 @@ public class MainActivity extends Activity {
         @Override
         public void onReceivedError(WebView view, WebResourceRequest request,
                 android.webkit.WebResourceError error) {
+            if (error != null) {
+                ErrLog.log("page", "load error " + error.getErrorCode() + " "
+                        + error.getDescription() + " " + request.getUrl());
+            }
             if (request.isForMainFrame() && !isFinishing()) {
                 new android.app.AlertDialog.Builder(MainActivity.this)
                         .setTitle("Connection problem")
@@ -145,6 +150,15 @@ public class MainActivity extends Activity {
                         .setPositiveButton("Retry", (d, w) -> mWeb.reload())
                         .setNegativeButton("Close", (d, w) -> finish())
                         .show();
+            }
+        }
+
+        @Override
+        public void onReceivedHttpError(WebView view, WebResourceRequest request,
+                WebResourceResponse errorResponse) {
+            if (request.isForMainFrame()) {
+                ErrLog.log("page", "http " + errorResponse.getStatusCode()
+                        + " " + request.getUrl());
             }
         }
 
@@ -157,6 +171,14 @@ public class MainActivity extends Activity {
     }
 
     private class Chrome extends WebChromeClient {
+        @Override
+        public boolean onConsoleMessage(android.webkit.ConsoleMessage msg) {
+            if (msg.messageLevel() == android.webkit.ConsoleMessage.MessageLevel.ERROR) {
+                ErrLog.log("js", msg.message() + " @" + msg.sourceId() + ":" + msg.lineNumber());
+            }
+            return false;
+        }
+
         @Override
         public void onShowCustomView(View view, CustomViewCallback callback) {
             mCustomView = view;
@@ -330,6 +352,25 @@ public class MainActivity extends Activity {
                 mPrefs.getBoolean("comments", false),
                 (checked) -> setTweak("comments", checked)));
 
+        sheet.addView(sectionLabel("DEVELOPER"));
+        TextView errRow = new TextView(this);
+        errRow.setText("Error log");
+        errRow.setTextColor(Color.WHITE);
+        errRow.setTextSize(16);
+        GradientDrawable errBg = new GradientDrawable();
+        errBg.setColor(0xFF2A2A2A);
+        errBg.setCornerRadius(dp(14));
+        errRow.setBackground(errBg);
+        errRow.setPadding(dp(16), dp(12), dp(12), dp(12));
+        LinearLayout.LayoutParams elp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        elp.bottomMargin = dp(8);
+        sheet.addView(errRow, elp);
+        errRow.setOnClickListener(v -> {
+            dialog.dismiss();
+            showErrorLog();
+        });
+
         TextView done = new TextView(this);
         done.setText("Done");
         done.setTextColor(0xFFFF4444);
@@ -352,6 +393,83 @@ public class MainActivity extends Activity {
             w.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
         }
         dialog.show();
+    }
+
+    private void showErrorLog() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable boxBg = new GradientDrawable();
+        boxBg.setColor(0xFF1B1B1B);
+        boxBg.setCornerRadius(dp(20));
+        box.setBackground(boxBg);
+        box.setPadding(dp(16), dp(14), dp(16), dp(8));
+
+        TextView title = new TextView(this);
+        title.setText("Error log");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(17);
+        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        box.addView(title);
+
+        TextView body = new TextView(this);
+        body.setText(ErrLog.read());
+        body.setTextColor(0xFFCCCCCC);
+        body.setTextSize(11);
+        body.setTypeface(android.graphics.Typeface.MONOSPACE);
+        body.setTextIsSelectable(true);
+        body.setPadding(0, dp(8), 0, dp(8));
+        android.widget.ScrollView sv = new android.widget.ScrollView(this);
+        sv.addView(body);
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        box.addView(sv, slp);
+
+        LinearLayout btns = new LinearLayout(this);
+        btns.setOrientation(LinearLayout.HORIZONTAL);
+        btns.setGravity(Gravity.END);
+        TextView copy = logButton("Copy");
+        TextView clear = logButton("Clear");
+        TextView close = logButton("Close");
+        copy.setOnClickListener(v -> {
+            android.content.ClipboardManager cm =
+                    (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            cm.setPrimaryClip(android.content.ClipData.newPlainText(
+                    "Tubify Lite error log", ErrLog.read()));
+            android.widget.Toast.makeText(this, "Error log copied",
+                    android.widget.Toast.LENGTH_SHORT).show();
+        });
+        clear.setOnClickListener(v -> {
+            ErrLog.clear();
+            body.setText(ErrLog.read());
+        });
+        close.setOnClickListener(v -> dialog.dismiss());
+        btns.addView(copy);
+        btns.addView(clear);
+        btns.addView(close);
+        box.addView(btns);
+
+        dialog.setContentView(box);
+        Window w = dialog.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.92f);
+            int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.7f);
+            w.setLayout(width, height);
+        }
+        dialog.show();
+    }
+
+    private TextView logButton(String text) {
+        TextView b = new TextView(this);
+        b.setText(text);
+        b.setTextColor(0xFFFF4444);
+        b.setTextSize(14);
+        b.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        b.setPadding(dp(14), dp(10), dp(6), dp(4));
+        return b;
     }
 
     private void setTweak(String key, boolean checked) {
