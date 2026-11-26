@@ -145,18 +145,7 @@ jobs:
           arch: x86_64
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
-          script: |
-            set -e
-            if [ "${{ matrix.name }}" = lite ]; then APK=$(ls out/Tubify-Lite-*.apk); else APK=$(ls out/Tubify-v*-x86_64.apk); fi
-            echo "Installing $APK"
-            adb install -r "$APK"
-            adb shell monkey -p ${{ matrix.pkg }} -c android.intent.category.LAUNCHER 1
-            sleep ${{ matrix.wait }}
-            adb shell pidof ${{ matrix.pkg }}
-            adb exec-out screencap -p > shot.png
-            adb logcat -d > logcat.txt
-            ! grep -q "FATAL EXCEPTION" logcat.txt
-            echo "SMOKE OK ${{ matrix.name }}"
+          script: set -e; if [ "${{ matrix.name }}" = lite ]; then APK=$(ls "$GITHUB_WORKSPACE"/out/Tubify-Lite-*.apk | head -1); else APK=$(ls "$GITHUB_WORKSPACE"/out/Tubify-v*-x86_64.apk | head -1); fi; echo "Installing $APK"; test -f "$APK"; adb install -r "$APK"; adb shell monkey -p ${{ matrix.pkg }} -c android.intent.category.LAUNCHER 1; sleep ${{ matrix.wait }}; adb shell pidof ${{ matrix.pkg }}; adb exec-out screencap -p > "$GITHUB_WORKSPACE/shot.png"; adb logcat -d > "$GITHUB_WORKSPACE/logcat.txt"; ! grep -q "FATAL EXCEPTION" "$GITHUB_WORKSPACE/logcat.txt"; echo "SMOKE OK ${{ matrix.name }}"
 
       - name: Upload smoke evidence
         uses: actions/upload-artifact@v4
