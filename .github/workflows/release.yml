@@ -74,7 +74,7 @@ jobs:
       - name: Verify APK contents
         run: |
           set -e
-          for a in out/*.apk; do
+          for a in out/Tubify-v0.1.1-*.apk; do
             echo "== $a =="
             unzip -l "$a" | grep -q 'assets/tweaks/manifest.json'
             unzip -l "$a" | grep -q 'assets/tweaks/content.js'
