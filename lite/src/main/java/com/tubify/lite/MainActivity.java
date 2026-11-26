@@ -291,12 +291,16 @@ public class MainActivity extends Activity {
         if (suggestions) css.append(
                 "ytm-watch-next-secondary-results-renderer,ytm-related-chip-cloud-renderer,"
                 + "ytm-item-section-renderer[section-identifier=\"related-items\"],"
+                + "ytm-item-section-renderer[section-identifier=\"watch-next-feed\"],"
                 + "ytd-watch-next-secondary-results-renderer,#related{display:none!important}");
         if (mPrefs.getBoolean("home", false)) css.append(
                 ".tubify-home ytm-rich-grid-renderer,.tubify-home ytm-rich-section-renderer,"
                 + ".tubify-home ytm-single-column-browse-results-renderer{display:none!important}");
         if (comments) css.append(
-                "ytm-comment-section-renderer,ytd-comments,#comments{display:none!important}");
+                "ytm-comment-section-renderer,ytm-comments-entry-point-header-renderer,"
+                + "ytm-item-section-renderer[section-identifier=\"comments-entry-point\"],"
+                + "ytm-engagement-panel-section-list-renderer[target-id*=\"comments-section\"],"
+                + "ytd-comments,#comments{display:none!important}");
         // Cosmetic ad hiding (only while ad blocking is on) and the always-on
         // removal of YouTube's "Open App" prompts.
         if (mPrefs.getBoolean("adblock", true)) {
