@@ -41,7 +41,6 @@ public class MainActivity extends Activity {
             "youtube.com/pagead/",
             "youtube.com/ptracking",
             "youtube.com/get_midroll",
-            "youtube.com/api/stats/qoe?",
             "/ad_break"
     };
 
@@ -91,7 +90,9 @@ public class MainActivity extends Activity {
         mChrome = new Chrome();
         mWeb.setWebChromeClient(mChrome);
 
-        if (savedInstanceState == null) {
+        if (savedInstanceState != null) {
+            mWeb.restoreState(savedInstanceState);
+        } else {
             mWeb.loadUrl(HOME);
         }
     }
@@ -126,6 +127,19 @@ public class MainActivity extends Activity {
             } catch (Exception ignored) {
             }
             return true;
+        }
+
+        @Override
+        public void onReceivedError(WebView view, WebResourceRequest request,
+                android.webkit.WebResourceError error) {
+            if (request.isForMainFrame() && !isFinishing()) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Connection problem")
+                        .setMessage("Could not load YouTube. Check your connection.")
+                        .setPositiveButton("Retry", (d, w) -> mWeb.reload())
+                        .setNegativeButton("Close", (d, w) -> finish())
+                        .show();
+            }
         }
 
         @Override
@@ -239,6 +253,7 @@ public class MainActivity extends Activity {
         gear.setTextColor(Color.WHITE);
         gear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
         gear.setGravity(Gravity.CENTER);
+        gear.setContentDescription("Tubify Lite settings");
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(0x99000000);
         bg.setCornerRadius(dp(22));
@@ -304,20 +319,26 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        mWeb.onPause();
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        mWeb.saveState(outState);
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        mWeb.onResume();
+    protected void onPause() {
+        super.onPause();
+        // Persist cookies (sign-in) without pausing playback: background
+        // audio keeps playing, matching the full Tubify app.
+        CookieManager.getInstance().flush();
     }
 
     @Override
     protected void onDestroy() {
         if (mWeb != null) {
+            ViewGroup parent = (ViewGroup) mWeb.getParent();
+            if (parent != null) {
+                parent.removeView(mWeb);
+            }
             mWeb.destroy();
         }
         super.onDestroy();
