@@ -189,7 +189,15 @@ public class MainActivity extends Activity {
                     sendTweaksSettings();
                 }
             }, "browser");
-        });
+            // On the very first run the page can load before the extension is
+            // active; reload once so the content script and CSS apply.
+            if (!mPrefs.getBoolean("tweaks_first_reload", false)) {
+                mPrefs.edit().putBoolean("tweaks_first_reload", true).apply();
+                if (mSession != null) {
+                    mSession.reload();
+                }
+            }
+        }, error -> android.util.Log.e("Tubify", "tweaks install failed", error));
     }
 
     private void sendTweaksSettings() {
