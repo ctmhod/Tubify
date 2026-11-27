@@ -6,7 +6,7 @@
 // keeps settings in storage, and receives live updates from the Android app
 // over the connectNative("browser") port.
 
-const DEFAULTS = { shorts: false, suggestions: false, comments: false, home: false };
+const DEFAULTS = { shorts: false, suggestions: false, comments: false, home: false, sponsors: true };
 
 // Styles for the Tubify gear button that the content script injects into the
 // YouTube header next to the logo.
@@ -31,22 +31,11 @@ const CSS = {
   shorts: [
     'a[href^="/shorts"]',
     'a[href*="youtube.com/shorts"]',
-    'ytm-pivot-bar-item-renderer:has(a[href*="/shorts"])',
-    'ytm-pivot-bar-item-renderer:has(.pivot-shorts)',
     "ytm-reel-shelf-renderer",
-    "ytm-rich-shelf-renderer",
     "ytm-shorts-lockup-view-model",
     "ytm-shorts-lockup-view-model-v2",
-    "ytm-select-with-timeline-renderer",
-    "ytm-rich-section-renderer:has(ytm-shorts-lockup-view-model)",
-    "ytm-rich-item-renderer:has(ytm-shorts-lockup-view-model)",
-    'ytm-video-with-context-renderer:has(a[href*="/shorts"])',
-    'ytm-tab-renderer:has(a[href*="/shorts"])',
     "ytd-reel-shelf-renderer",
-    "ytd-rich-shelf-renderer",
-    "ytd-reel-video-renderer",
-    'ytd-rich-item-renderer:has(a[href*="/shorts"])',
-    'ytd-tab-renderer:has(a[href*="/shorts"])'
+    "ytd-reel-video-renderer"
   ].join(", ") + " { display: none !important; }",
   suggestions: [
     "ytm-watch-next-secondary-results-renderer",
@@ -65,6 +54,10 @@ const CSS = {
   comments: [
     "ytm-comment-section-renderer",
     "ytm-comments-entry-point-header-renderer",
+    "comments-entry-point-teaser-view-model",
+    "yt-video-metadata-carousel-view-model",
+    "yt-comment-teaser-carousel-item-view-model",
+    '[section-identifier*="comment"]',
     'ytm-item-section-renderer[section-identifier="comments-entry-point"]',
     'ytm-engagement-panel-section-list-renderer[target-id*="comments-section"]',
     "ytd-comments",
@@ -189,6 +182,9 @@ browser.runtime.onMessage.addListener((msg, sender) => {
     applied.delete(sender.tab.id);
     applyToTab(sender.tab.id);
   }
+  if (msg && msg.type === "tubify-sb") {
+    return sponsorSegments(msg.id);
+  }
   if (msg && msg.type === "tubify-log") {
     logErr("content: " + msg.msg);
   }
@@ -198,3 +194,23 @@ browser.runtime.onMessage.addListener((msg, sender) => {
     } catch (e) {}
   }
 });
+
+// Sponsor segments from SponsorBlock (sponsor.ajay.app, CC BY-NC-SA 4.0).
+// Only the first 4 hex chars of sha256(videoId) are sent.
+function sponsorSegments(id) {
+  return crypto.subtle.digest("SHA-256", new TextEncoder().encode(id)).then((buf) => {
+    const a = new Uint8Array(buf);
+    let h = "";
+    for (let i = 0; i < 2; i++) h += ("0" + a[i].toString(16)).slice(-2);
+    return fetch("https://sponsor.ajay.app/api/skipSegments/" + h +
+      "?categories=" + encodeURIComponent('["sponsor","selfpromo","interaction"]') +
+      "&actionTypes=" + encodeURIComponent('["skip"]'));
+  }).then((r) => (r.ok ? r.json() : []))
+    .then((list) => {
+      for (const it of list) {
+        if (it.videoID === id) return it.segments.map((x) => x.segment);
+      }
+      return [];
+    })
+    .catch(() => []);
+}
