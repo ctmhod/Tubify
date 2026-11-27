@@ -142,15 +142,18 @@ log "== 16 pull to refresh"
 ytx 80-pull-before "https://m.youtube.com/results?search_query=music"
 adb logcat -c
 adb shell input motionevent DOWN 160 160; sleep 0.2
-adb shell input motionevent MOVE 160 220; sleep 0.2
-adb shell input motionevent MOVE 160 290; sleep 0.2
-adb shell input motionevent MOVE 160 360; sleep 0.5
+adb shell input motionevent MOVE 160 260; sleep 0.2
+adb shell input motionevent MOVE 160 360; sleep 0.2
+adb shell input motionevent MOVE 160 470; sleep 0.5
 shot 81-pull-mid
-adb shell input motionevent UP 160 360
+adb shell input motionevent UP 160 470
 sleep $((W+8)); shot 82-pull-after
 adb logcat -d > "$OUT/logcat-pull.txt"
-n=$(grep -c "adclean on\|tubify-path\|shorts hider\|TUBIFY_TWEAK" "$OUT/logcat-pull.txt")
-log "INFO pull-refresh page markers after pull: $n"
+# Reload evidence differs per engine: Full (Gecko) logs a GeckoView PageStart
+# on reload; Lite (WebView) re-injects the ad cleaner which logs once per load.
+if [ "$PKG" = "com.tubify.lite" ]; then MARK="TUBIFY_TWEAK adclean on"; else MARK="GeckoView:PageStart"; fi
+n=$(grep -c "$MARK" "$OUT/logcat-pull.txt")
+log "INFO pull-refresh reload markers after pull ($MARK): $n"
 [ "$n" -gt 0 ] && log "PASS pull to refresh reloaded the page" || log "FAIL pull to refresh did not reload"
 log "== 17 background playback"
 launch_settings dark

@@ -4,10 +4,10 @@ on:
     inputs:
       new_tag:
         description: Release tag to test
-        default: v0.1.55
+        default: v0.1.56
       old_tag:
         description: Older release tag for the upgrade test
-        default: v0.1.54
+        default: v0.1.55
 jobs:
   qa:
     runs-on: ubuntu-latest

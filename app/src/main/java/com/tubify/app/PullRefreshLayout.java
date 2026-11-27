@@ -22,7 +22,7 @@ public class PullRefreshLayout extends FrameLayout {
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint arc = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
-    private float startX, startY, pull;
+    private float startX, startY, rawStartY, pull;
     private boolean eligible, pulling;
     private int accent = 0xFFFF3B3B, bg = 0xFF20232E;
 
@@ -50,6 +50,7 @@ public class PullRefreshLayout extends FrameLayout {
             case MotionEvent.ACTION_DOWN:
                 startX = e.getX();
                 startY = e.getY();
+                rawStartY = e.getY();
                 pulling = false;
                 eligible = host.canPull();
                 break;
@@ -84,7 +85,10 @@ public class PullRefreshLayout extends FrameLayout {
                 invalidate();
                 return true;
             case MotionEvent.ACTION_UP:
-                boolean go = pull >= trigger;
+                // Trigger on the real finger travel from ACTION_DOWN; the
+                // visible pull is damped (x0.5), so using it doubled the
+                // distance a user had to drag before a refresh fired.
+                boolean go = (e.getY() - rawStartY) >= trigger;
                 finish();
                 if (go) host.onRefresh();
                 return true;
