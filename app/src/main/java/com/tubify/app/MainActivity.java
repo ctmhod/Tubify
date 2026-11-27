@@ -424,14 +424,10 @@ public class MainActivity extends Activity {
 
 content.addView(sectionLabel("PLAYBACK"));
         content.addView(settingRow(dialog, "Background playback", "Keeps playing when you leave the app or turn off the screen",
-                mPrefs.getBoolean("bgplay", true), (checked) -> {
+                mPrefs.getBoolean("bgplay", false), (checked) -> {
                     mPrefs.edit().putBoolean("bgplay", checked).apply();
                     sendTweaksSettings();
-                    if (checked && android.os.Build.VERSION.SDK_INT >= 33
-                            && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                            != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                        requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 71);
-                    }
+                    if (checked) askBgPermissions();
                     reloadSoon();
                 }));
 
@@ -454,7 +450,7 @@ content.addView(sectionLabel("PLAYBACK"));
             mPrefs.edit().putString("theme", "auto").putBoolean("adblock", true).putBoolean("sponsors", true)
                     .putBoolean("adguard", false).putBoolean("abp", false)
                     .putBoolean("shorts", false).putBoolean("suggestions", false)
-                    .putBoolean("comments", false).putBoolean("home", false).putBoolean("bgplay", true).apply();
+                    .putBoolean("comments", false).putBoolean("home", false).putBoolean("bgplay", false).apply();
             resolveTheme();
             applyYtTheme();
             syncBlockers();
@@ -856,7 +852,7 @@ content.addView(sectionLabel("PLAYBACK"));
             msg.put("comments", mPrefs.getBoolean("comments", false));
             msg.put("home", mPrefs.getBoolean("home", false));
             msg.put("sponsors", mPrefs.getBoolean("sponsors", true));
-            msg.put("bgplay", mPrefs.getBoolean("bgplay", true));
+            msg.put("bgplay", mPrefs.getBoolean("bgplay", false));
             mTweaksPort.postMessage(msg);
         } catch (JSONException ignored) {
         }
@@ -1042,17 +1038,48 @@ content.addView(sectionLabel("PLAYBACK"));
 
     // --- Background playback ---
 
+    // Permissions Background playback needs: notifications, then Unrestricted battery use.
+    private void askBgPermissions() {
+        if (android.os.Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 71);
+            return;
+        }
+        askBattery();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 71) askBattery();
+    }
+
+    private void askBattery() {
+        try {
+            android.os.PowerManager pm = getSystemService(android.os.PowerManager.class);
+            if (pm != null && pm.isIgnoringBatteryOptimizations(getPackageName())) return;
+            startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    android.net.Uri.parse("package:" + getPackageName())));
+        } catch (Exception e) {
+            try {
+                startActivity(new Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
-        if (mPrefs != null && mPrefs.getBoolean("bgplay", true) && !isFinishing()) {
+        if (mPrefs != null && mPrefs.getBoolean("bgplay", false) && !isFinishing()) {
             try {
                 startForegroundService(new Intent(this, PlaybackService.class));
             } catch (Exception e) {
                 ErrLog.log("bgplay", "service start failed: " + e);
             }
         }
-        if (mSession != null && mPrefs.getBoolean("bgplay", true)) mSession.setActive(true);
+        if (mSession != null && mPrefs.getBoolean("bgplay", false)) mSession.setActive(true);
     }
 
     @Override
