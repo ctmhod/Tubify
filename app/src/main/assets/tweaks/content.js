@@ -6,7 +6,7 @@
 // injected stylesheet survives in-page navigation. Also injects the Tubify
 // gear button into the YouTube header, right after the logo.
 
-const DEFAULTS = { shorts: false, suggestions: false, comments: false, home: false, sponsors: true, bgplay: true };
+const DEFAULTS = { shorts: false, suggestions: false, comments: false, home: false, sponsors: true, bgplay: false };
 
 const GEAR_CSS =
   "#tubify-gear{display:inline-flex;align-items:center;justify-content:center;" +
@@ -257,8 +257,8 @@ setInterval(() => {
 
 
 // --- Background playback: keep the page "visible" so YouTube does not pause ---
-let bgOn = true;
-function bgSync() { bgOn = !lastSettings || lastSettings.bgplay !== false; }
+let bgOn = false;
+function bgSync() { bgOn = !!(lastSettings && lastSettings.bgplay); }
 try {
   const pd = document.wrappedJSObject;
   const realVs = Object.getOwnPropertyDescriptor(Document.prototype, "visibilityState");
