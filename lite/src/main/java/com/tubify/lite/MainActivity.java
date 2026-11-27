@@ -532,7 +532,7 @@ public class MainActivity extends Activity {
                 + "border:1px solid #20232E;border-radius:50%;background:#12141C;color:#E8EAF0;"
                 + "font-size:16px;line-height:1;vertical-align:middle;flex:0 0 auto;"
                 + "-webkit-tap-highlight-color:transparent}"
-                + "html.tubify-home #tubify-gear{margin-left:6px}"
+                + "html.tubify-home #tubify-gear{margin-left:1px}"
                 + "#tubify-gear:active{background:#20232E}';"
                 + "(document.head||document.documentElement).appendChild(st);"
                 + "function ins(){"
