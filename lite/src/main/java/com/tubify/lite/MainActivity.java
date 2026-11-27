@@ -136,7 +136,20 @@ public class MainActivity extends Activity {
         resolveTheme();
         applyImmersive();
 
-        FrameLayout root = new FrameLayout(this);
+        PullRefreshLayout root = new PullRefreshLayout(this, new PullRefreshLayout.Host() {
+            @Override
+            public boolean canPull() {
+                if (mWeb == null || mCustomView != null || mWeb.canScrollVertically(-1)) return false;
+                String u = mWeb.getUrl();
+                return u != null && !u.contains("/watch");
+            }
+
+            @Override
+            public void onRefresh() {
+                if (mWeb != null) mWeb.reload();
+            }
+        });
+        root.setColors(COL_ACCENT, COL_CARD);
         mWeb = new WebView(this);
         root.addView(mWeb, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
