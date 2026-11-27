@@ -6,7 +6,7 @@
 // injected stylesheet survives in-page navigation. Also injects the Tubify
 // gear button into the YouTube header, right after the logo.
 
-const DEFAULTS = { shorts: false, suggestions: false, comments: false, home: false };
+const DEFAULTS = { shorts: false, suggestions: false, comments: false, home: false, sponsors: true };
 
 const GEAR_CSS =
   "#tubify-gear{display:inline-flex;align-items:center;justify-content:center;" +
@@ -33,22 +33,11 @@ const CSS = {
   shorts: [
     'a[href^="/shorts"]',
     'a[href*="youtube.com/shorts"]',
-    'ytm-pivot-bar-item-renderer:has(a[href*="/shorts"])',
-    'ytm-pivot-bar-item-renderer:has(.pivot-shorts)',
     "ytm-reel-shelf-renderer",
-    "ytm-rich-shelf-renderer",
     "ytm-shorts-lockup-view-model",
     "ytm-shorts-lockup-view-model-v2",
-    "ytm-select-with-timeline-renderer",
-    "ytm-rich-section-renderer:has(ytm-shorts-lockup-view-model)",
-    "ytm-rich-item-renderer:has(ytm-shorts-lockup-view-model)",
-    'ytm-video-with-context-renderer:has(a[href*="/shorts"])',
-    'ytm-tab-renderer:has(a[href*="/shorts"])',
     "ytd-reel-shelf-renderer",
-    "ytd-rich-shelf-renderer",
-    "ytd-reel-video-renderer",
-    'ytd-rich-item-renderer:has(a[href*="/shorts"])',
-    'ytd-tab-renderer:has(a[href*="/shorts"])'
+    "ytd-reel-video-renderer"
   ].join(", ") + " { display: none !important; }",
   suggestions: [
     "ytm-watch-next-secondary-results-renderer",
@@ -67,6 +56,10 @@ const CSS = {
   comments: [
     "ytm-comment-section-renderer",
     "ytm-comments-entry-point-header-renderer",
+    "comments-entry-point-teaser-view-model",
+    "yt-video-metadata-carousel-view-model",
+    "yt-comment-teaser-carousel-item-view-model",
+    '[section-identifier*="comment"]',
     'ytm-item-section-renderer[section-identifier="comments-entry-point"]',
     'ytm-engagement-panel-section-list-renderer[target-id*="comments-section"]',
     "ytd-comments",
@@ -192,3 +185,71 @@ new MutationObserver(() => {
   sweepOpenApp();
   updatePathClass();
 }).observe(document.documentElement, { childList: true, subtree: true });
+
+
+// --- Structural Shorts hider (same logic as Tubify Lite) ---
+const SHORTS_SEL = 'a[href*="/shorts"],ytm-shorts-lockup-view-model,ytm-shorts-lockup-view-model-v2';
+function hideEl(el) { el.style.display = "none"; el.setAttribute("data-tubify-shorts", "1"); }
+function killShorts() {
+  if (!lastSettings || !lastSettings.shorts) {
+    document.querySelectorAll("[data-tubify-shorts]").forEach((el) => {
+      el.style.display = "";
+      el.removeAttribute("data-tubify-shorts");
+    });
+    return;
+  }
+  document.querySelectorAll("ytm-pivot-bar-item-renderer").forEach((el) => {
+    if (el.querySelector('a[href*="/shorts"],.pivot-shorts')) hideEl(el);
+  });
+  // Only single video cells, never feed containers.
+  document.querySelectorAll(
+    "ytm-video-with-context-renderer,ytd-video-renderer,ytm-rich-item-renderer," +
+    "ytd-rich-item-renderer,ytm-compact-video-renderer").forEach((el) => {
+    if (el.querySelector(SHORTS_SEL)) hideEl(el);
+  });
+  // Shelves are hidden only when titled Shorts.
+  document.querySelectorAll(
+    "ytm-rich-section-renderer,ytm-item-section-renderer,ytm-shelf-renderer,ytm-rich-shelf-renderer").forEach((el) => {
+    const h = el.querySelector("h2,.shelf-title,.rich-shelf-title,ytm-shelf-header-renderer");
+    if (h && /^\s*shorts\s*$/i.test(h.textContent || "")) hideEl(el);
+  });
+}
+let killPending = false;
+new MutationObserver(() => {
+  if (killPending) return;
+  killPending = true;
+  setTimeout(() => { killPending = false; killShorts(); }, 300);
+}).observe(document.documentElement, { childList: true, subtree: true });
+setTimeout(killShorts, 1500);
+
+// --- Built-in sponsor skipping (SponsorBlock data, CC BY-NC-SA 4.0) ---
+// Segments are fetched by the background script. No SponsorBlock UI is shown.
+let sbCur = null, sbSegs = [], sbLast = -1;
+function sbVideoId() {
+  const m = location.search.match(/[?&]v=([\w-]{11})/);
+  return (location.pathname === "/watch" && m) ? m[1] : null;
+}
+setInterval(() => {
+  try {
+    if (!lastSettings || !lastSettings.sponsors) return;
+    const id = sbVideoId();
+    if (id !== sbCur) {
+      sbCur = id; sbSegs = []; sbLast = -1;
+      if (id) {
+        browser.runtime.sendMessage({ type: "tubify-sb", id }).then((segs) => {
+          if (sbCur === id && Array.isArray(segs)) sbSegs = segs;
+        }).catch(() => {});
+      }
+    }
+    const v = document.querySelector("video");
+    if (!v || !sbSegs.length || v.paused) return;
+    const t = v.currentTime;
+    for (let i = 0; i < sbSegs.length; i++) {
+      if (t >= sbSegs[i][0] && t < sbSegs[i][1] - 0.4 && sbLast !== i) {
+        sbLast = i;
+        v.currentTime = sbSegs[i][1];
+        break;
+      }
+    }
+  } catch (e) {}
+}, 500);
