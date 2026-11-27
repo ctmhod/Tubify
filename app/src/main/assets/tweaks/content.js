@@ -10,10 +10,10 @@ const DEFAULTS = { shorts: true, suggestions: true, comments: false, home: false
 
 const GEAR_CSS =
   "#tubify-gear{display:inline-flex;align-items:center;justify-content:center;" +
-  "width:28px;height:28px;margin-left:-3px;padding:0;border:1px solid #20232E;border-radius:50%;" +
+  "width:28px;height:28px;margin-left:-5px;margin-right:5px;padding:0;border:1px solid #20232E;border-radius:50%;" +
   "background:#12141C;color:#E8EAF0;font-size:16px;line-height:1;" +
   "vertical-align:middle;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}" +
-  "html.tubify-home #tubify-gear{margin-left:1px;}" +
+  "html.tubify-wide #tubify-gear{margin-left:1px;margin-right:0;}" +
   "#tubify-gear:active{background:#20232E;}";
 
 // Always-on: remove YouTube's "Open App" prompts (button in the top bar,
@@ -79,7 +79,16 @@ let lastSettings = null;
 let lastPath = null;
 
 // Page-scoped marker class: some tweaks (home feed) must only apply on "/".
+let wideTimer = 0;
+function updateWide() {
+  wideTimer = 0;
+  const s = document.querySelector("ytm-topbar-logo-renderer svg, c3-topbar-logo svg, ytm-home-logo svg");
+  if (!s) return;
+  document.documentElement.classList.toggle("tubify-wide", s.getBoundingClientRect().width > 60);
+}
+
 function updatePathClass() {
+  if (!wideTimer) wideTimer = setTimeout(updateWide, 150);
   const path = location.pathname;
   if (path === lastPath) return;
   lastPath = path;
