@@ -6,7 +6,7 @@
 // keeps settings in storage, and receives live updates from the Android app
 // over the connectNative("browser") port.
 
-const DEFAULTS = { shorts: false, suggestions: false, comments: false, home: false, sponsors: true };
+const DEFAULTS = { shorts: false, suggestions: false, comments: false, home: false, sponsors: true, bgplay: true };
 
 // Styles for the Tubify gear button that the content script injects into the
 // YouTube header next to the logo.
