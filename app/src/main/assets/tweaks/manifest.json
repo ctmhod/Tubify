@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Tubify Tweaks",
-  "version": "1.8.5",
+  "version": "1.8.6",
   "description": "Tubify interface tweaks for YouTube: hide Shorts, suggestions and comments.",
   "browser_specific_settings": {
     "gecko": {
