@@ -26,7 +26,7 @@ const OPENAPP_CSS =
   " { display: none !important; }" +
   // YouTube logo about 10% larger via transform, so the gear keeps its size.
   "ytm-home-logo svg, ytm-home-logo img, ytm-topbar-logo-renderer svg" +
-  " { transform: scale(1.1); transform-origin: left center; margin-right: 8px; }";
+  " { transform: scale(1.1); transform-origin: left center; margin-right: 22px; }";
 
 const CSS = {
   shorts: [
