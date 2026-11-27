@@ -85,6 +85,7 @@ function updatePathClass() {
   const path = location.pathname;
   if (path === lastPath) return;
   lastPath = path;
+  try { browser.runtime.sendMessage({ type: "tubify-path", path }); } catch (e) {}
   document.documentElement.classList.toggle("tubify-home", path === "/");
   if (lastSettings) apply(lastSettings);
 }
