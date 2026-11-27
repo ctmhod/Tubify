@@ -384,10 +384,10 @@ public class MainActivity extends Activity {
         content.addView(sectionLabel("INTERFACE"));
         content.addView(themeRow(dialog));
         content.addView(settingRow(dialog, "Hide Shorts", null,
-                mPrefs.getBoolean("shorts", true),
+                mPrefs.getBoolean("shorts", false),
                 (checked) -> setTweak("shorts", checked)));
         content.addView(settingRow(dialog, "Hide suggestions", null,
-                mPrefs.getBoolean("suggestions", true),
+                mPrefs.getBoolean("suggestions", false),
                 (checked) -> setTweak("suggestions", checked)));
         content.addView(settingRow(dialog, "Hide comments", null,
                 mPrefs.getBoolean("comments", false),
@@ -396,10 +396,10 @@ public class MainActivity extends Activity {
                 mPrefs.getBoolean("home", false),
                 (checked) -> setTweak("home", checked)));
 
-        content.addView(actionRow("Reset to defaults", "Auto theme, ads blocked, Shorts hidden", () -> {
+        content.addView(actionRow("Reset to defaults", "Auto theme, ads blocked, nothing hidden", () -> {
             mPrefs.edit().putString("theme", "auto").putBoolean("adblock", true)
                     .putBoolean("adguard", false).putBoolean("abp", false)
-                    .putBoolean("shorts", true).putBoolean("suggestions", true)
+                    .putBoolean("shorts", false).putBoolean("suggestions", false)
                     .putBoolean("comments", false).putBoolean("home", false).apply();
             resolveTheme();
             applyYtTheme();
@@ -775,8 +775,8 @@ public class MainActivity extends Activity {
         }
         JSONObject msg = new JSONObject();
         try {
-            msg.put("shorts", mPrefs.getBoolean("shorts", true));
-            msg.put("suggestions", mPrefs.getBoolean("suggestions", true));
+            msg.put("shorts", mPrefs.getBoolean("shorts", false));
+            msg.put("suggestions", mPrefs.getBoolean("suggestions", false));
             msg.put("comments", mPrefs.getBoolean("comments", false));
             msg.put("home", mPrefs.getBoolean("home", false));
             mTweaksPort.postMessage(msg);
