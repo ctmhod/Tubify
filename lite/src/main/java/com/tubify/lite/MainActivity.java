@@ -479,7 +479,7 @@ public class MainActivity extends Activity {
         css.append("ytm-home-logo,ytm-topbar-logo-renderer,c3-topbar-logo"
                 + "{flex:0 0 auto!important;min-width:fit-content}"
                 + "ytm-home-logo svg,ytm-home-logo img,ytm-topbar-logo-renderer svg"
-                + "{transform:scale(1.1);transform-origin:left center;margin-right:8px}");
+                + "{transform:scale(1.1);transform-origin:left center;margin-right:22px}");
         css.append("a[href^=\"vnd.youtube:\"],a[href^=\"intent:\"],a[href^=\"youtube://\"],"
                 + "ytm-watch-metadata-app-promo-renderer,ytm-open-app-button-renderer,"
                 + "#open-app-button{display:none!important}");
