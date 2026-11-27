@@ -6,7 +6,7 @@
 // injected stylesheet survives in-page navigation. Also injects the Tubify
 // gear button into the YouTube header, right after the logo.
 
-const DEFAULTS = { shorts: false, suggestions: false, comments: false, home: false, sponsors: true };
+const DEFAULTS = { shorts: false, suggestions: false, comments: false, home: false, sponsors: true, bgplay: true };
 
 const GEAR_CSS =
   "#tubify-gear{display:inline-flex;align-items:center;justify-content:center;" +
@@ -254,3 +254,30 @@ setInterval(() => {
     }
   } catch (e) {}
 }, 500);
+
+
+// --- Background playback: keep the page "visible" so YouTube does not pause ---
+let bgOn = true;
+function bgSync() { bgOn = !lastSettings || lastSettings.bgplay !== false; }
+try {
+  const pd = document.wrappedJSObject;
+  const realVs = Object.getOwnPropertyDescriptor(Document.prototype, "visibilityState");
+  const getHidden = exportFunction(function () { return bgOn ? false : (realVs ? realVs.get.call(pd) === "hidden" : false); }, window);
+  const getVis = exportFunction(function () { return bgOn ? "visible" : (realVs ? realVs.get.call(pd) : "visible"); }, window);
+  Object.defineProperty(pd, "hidden", { get: getHidden, configurable: true });
+  Object.defineProperty(pd, "visibilityState", { get: getVis, configurable: true });
+} catch (e) {}
+["visibilitychange", "webkitvisibilitychange"].forEach((n) => {
+  document.addEventListener(n, (e) => { if (bgOn) e.stopImmediatePropagation(); }, true);
+});
+let bgSeen = "";
+setInterval(() => {
+  bgSync();
+  try {
+    const real = document.visibilityState;
+    if (real !== bgSeen) {
+      bgSeen = real;
+      browser.runtime.sendMessage({ type: "tubify-log", msg: "bg real=" + real + " pageSees=" + document.wrappedJSObject.visibilityState + " on=" + bgOn });
+    }
+  } catch (e) {}
+}, 1000);
