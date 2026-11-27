@@ -87,6 +87,9 @@ public class MainActivity extends Activity {
     private static final String AG_XPI =
             "https://addons.mozilla.org/firefox/downloads/latest/adguard-adblocker/latest.xpi";
     private static final String AG_ID = "adguardadblocker@adguard.com";
+    private static final String SB_XPI =
+            "https://addons.mozilla.org/firefox/downloads/latest/sponsorblock/latest.xpi";
+    private static final String SB_ID = "sponsorBlocker@ajay.app";
     private static final String ABP_XPI =
             "https://addons.mozilla.org/firefox/downloads/latest/adblock-plus/latest.xpi";
     private static final String ABP_ID = "{d10d0bf8-f5b5-c8b4-a8b2-2b9879e08c5d}";
@@ -380,6 +383,20 @@ public class MainActivity extends Activity {
                         if (mSession != null) mSession.reload();
                     }, 900);
                 }));
+        content.addView(settingRow(dialog, "Block sponsors", "Skips sponsor segments inside videos",
+                mPrefs.getBoolean("sponsors", true), (checked) -> {
+                    mPrefs.edit().putBoolean("sponsors", checked).apply();
+                    syncBlockers();
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        if (mSession != null) mSession.reload();
+                    }, 900);
+                }));
+        TextView sbNote = new TextView(this);
+        sbNote.setText("Segment data from SponsorBlock (sponsor.ajay.app), CC BY-NC-SA 4.0");
+        sbNote.setTextColor(COL_TEXT2);
+        sbNote.setTextSize(11);
+        sbNote.setPadding(dp(4), dp(2), dp(4), dp(6));
+        content.addView(sbNote);
 
         content.addView(sectionLabel("INTERFACE"));
         content.addView(themeRow(dialog));
@@ -396,8 +413,8 @@ public class MainActivity extends Activity {
                 mPrefs.getBoolean("home", false),
                 (checked) -> setTweak("home", checked)));
 
-        content.addView(actionRow("Reset to defaults", "Auto theme, ads blocked, nothing hidden", () -> {
-            mPrefs.edit().putString("theme", "auto").putBoolean("adblock", true)
+        content.addView(actionRow("Reset to defaults", "Auto theme, ads and sponsors blocked, nothing hidden", () -> {
+            mPrefs.edit().putString("theme", "auto").putBoolean("adblock", true).putBoolean("sponsors", true)
                     .putBoolean("adguard", false).putBoolean("abp", false)
                     .putBoolean("shorts", false).putBoolean("suggestions", false)
                     .putBoolean("comments", false).putBoolean("home", false).apply();
@@ -788,6 +805,7 @@ public class MainActivity extends Activity {
         syncBlocker("adblock", true, "diag_ubo", "ubo", UBO_ID, UBO_XPI, "uBlock Origin");
         syncBlocker("adguard", false, "diag_ag", "ag", AG_ID, AG_XPI, "AdGuard");
         syncBlocker("abp", false, "diag_abp", "abp", ABP_ID, ABP_XPI, "AdBlock Plus");
+        syncBlocker("sponsors", true, "diag_sb", "sb", SB_ID, SB_XPI, "SponsorBlock");
     }
 
     private void syncBlocker(String prefKey, boolean def, String diagKey, String installedKey,
@@ -935,7 +953,8 @@ public class MainActivity extends Activity {
         String abp = mPrefs.getString("diag_abp", "off");
         return "Tweaks extension: " + tweaks + "\n"
                 + "App bridge: " + (bridge ? "connected" : "not connected") + "\n"
-                + "Ad blocking: " + ubo;
+                + "Ad blocking: " + ubo + "\n"
+                + "Sponsors: " + mPrefs.getString("diag_sb", "not installed yet");
     }
 
     private void applyImmersive() {
