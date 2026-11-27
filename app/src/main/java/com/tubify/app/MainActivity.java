@@ -203,7 +203,7 @@ public class MainActivity extends Activity {
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
                 } else {
                     applyImmersive();
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
                 }
             }
         });
