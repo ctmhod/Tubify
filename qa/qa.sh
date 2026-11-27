@@ -111,4 +111,19 @@ has ra "Auto (follow system)"
 D2=$(checked); log "switches on after reset: $D2"
 [ "$D2" = "$B" ] && log "PASS reset restored default toggles" || log "FAIL reset toggles ($B expected, got $D2)"
 fatal reset
+log "== 13 Block ads toggle"
+launch_settings dark
+adb shell input swipe 160 100 160 600 300; adb shell input swipe 160 100 160 600 300; sleep 1
+dump ba0; shot 60-blockads-on
+has ba0 "Block ads"
+E0=$(checked); log "switches on before Block ads tap: $E0"
+tap "Block ads"; sleep 6
+E1=$(checked); shot 61-blockads-off; log "switches on after Block ads tap: $E1"
+[ "$E1" != "$E0" ] && log "PASS Block ads toggled" || log "FAIL Block ads did not change state"
+adb shell input swipe 160 500 160 100 300; adb shell input swipe 160 500 160 100 300; adb shell input swipe 160 500 160 100 300; sleep 1
+dump ba1; shot 62-blockads-diag
+grep -o 'Ad blocking: [a-z ]*' "$OUT/ba1.xml" | head -1 | tee -a "$R"
+tap "Block ads"; sleep 6; E2=$(checked); log "switches on after second tap: $E2"
+[ "$E2" = "$E0" ] && log "PASS Block ads toggled back" || log "FAIL Block ads did not toggle back"
+fatal blockads
 log "DONE"
