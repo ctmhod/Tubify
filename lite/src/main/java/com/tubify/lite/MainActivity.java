@@ -479,7 +479,7 @@ public class MainActivity extends Activity {
         css.append("ytm-home-logo,ytm-topbar-logo-renderer,c3-topbar-logo"
                 + "{flex:0 0 auto!important;min-width:fit-content}"
                 + "ytm-home-logo svg,ytm-home-logo img,ytm-topbar-logo-renderer svg"
-                + "{transform:scale(1.1);transform-origin:left center;margin-right:22px}");
+                + "{transform:scale(1.1);transform-origin:left center;margin-right:8px}");
         css.append("a[href^=\"vnd.youtube:\"],a[href^=\"intent:\"],a[href^=\"youtube://\"],"
                 + "ytm-watch-metadata-app-promo-renderer,ytm-open-app-button-renderer,"
                 + "#open-app-button{display:none!important}");
@@ -528,7 +528,7 @@ public class MainActivity extends Activity {
                 + "var ID='tubify-gear';"
                 + "var st=document.createElement('style');st.id='tubify-gear-css';"
                 + "st.textContent='#tubify-gear{display:inline-flex;align-items:center;"
-                + "justify-content:center;width:28px;height:28px;margin-left:-10px;padding:0;"
+                + "justify-content:center;width:28px;height:28px;margin-left:6px;padding:0;"
                 + "border:1px solid #20232E;border-radius:50%;background:#12141C;color:#E8EAF0;"
                 + "font-size:16px;line-height:1;vertical-align:middle;flex:0 0 auto;"
                 + "-webkit-tap-highlight-color:transparent}"
