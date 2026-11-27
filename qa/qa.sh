@@ -138,4 +138,18 @@ grep -q "sponsor segments=[1-9]" "$OUT/logcat-70-sponsor-video.txt" && log "PASS
 log "== 15 full shorts/home"
 ytx 71-home-shorts-hidden "https://m.youtube.com/" --ez tubify_shorts true
 ytx 72-home-shorts-shown "https://m.youtube.com/" --ez tubify_shorts false
+log "== 16 pull to refresh"
+ytx 80-pull-before "https://m.youtube.com/results?search_query=music"
+adb logcat -c
+adb shell input motionevent DOWN 160 160; sleep 0.2
+adb shell input motionevent MOVE 160 220; sleep 0.2
+adb shell input motionevent MOVE 160 290; sleep 0.2
+adb shell input motionevent MOVE 160 360; sleep 0.5
+shot 81-pull-mid
+adb shell input motionevent UP 160 360
+sleep $((W+8)); shot 82-pull-after
+adb logcat -d > "$OUT/logcat-pull.txt"
+n=$(grep -c "adclean on\|tubify-path\|shorts hider\|TUBIFY_TWEAK" "$OUT/logcat-pull.txt")
+log "INFO pull-refresh page markers after pull: $n"
+[ "$n" -gt 0 ] && log "PASS pull to refresh reloaded the page" || log "FAIL pull to refresh did not reload"
 log "DONE"
