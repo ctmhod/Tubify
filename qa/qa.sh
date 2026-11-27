@@ -126,4 +126,13 @@ grep -o 'Ad blocking: [a-z ]*' "$OUT/ba1.xml" | head -1 | tee -a "$R"
 tap "Block ads"; sleep 6; E2=$(checked); log "switches on after second tap: $E2"
 [ "$E2" = "$E0" ] && log "PASS Block ads toggled back" || log "FAIL Block ads did not toggle back"
 fatal blockads
+log "== 14 sponsors"
+launch_settings dark
+adb shell input swipe 160 100 160 600 300; adb shell input swipe 160 100 160 600 300; sleep 1
+dump sp0; shot 63-sponsors-settings
+has sp0 "Block sponsors"
+grep -q "Segment data from SponsorBlock" "$OUT/sp0.xml" && log "PASS attribution line shown" || log "FAIL attribution line missing"
+ytx 70-sponsor-video "https://m.youtube.com/watch?v=j5HZgg6gXNo"
+grep -h "TUBIFY_TWEAK sponsor" "$OUT/logcat-70-sponsor-video.txt" | head -5 | tee -a "$R"
+grep -q "sponsor segments=[1-9]" "$OUT/logcat-70-sponsor-video.txt" && log "PASS sponsor segments fetched" || log "INFO no sponsor segment log (Full uses the extension)"
 log "DONE"
