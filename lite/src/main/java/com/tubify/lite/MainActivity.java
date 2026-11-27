@@ -128,11 +128,12 @@ public class MainActivity extends Activity {
         mPrefs = getSharedPreferences("tubify_lite", MODE_PRIVATE);
         String forcedTheme = getIntent().getStringExtra("tubify_theme");
         if (forcedTheme != null) mPrefs.edit().putString("theme", forcedTheme).apply();
-        for (String k : new String[]{"shorts", "suggestions", "comments", "home", "adblock", "sponsors"}) {
+        for (String k : new String[]{"shorts", "suggestions", "comments", "home", "adblock", "sponsors", "bgplay"}) {
             if (getIntent().hasExtra("tubify_" + k)) {
                 mPrefs.edit().putBoolean(k, getIntent().getBooleanExtra("tubify_" + k, false)).apply();
             }
         }
+        sBg = mPrefs.getBoolean("bgplay", true);
         resolveTheme();
         applyImmersive();
 
@@ -150,7 +151,7 @@ public class MainActivity extends Activity {
             }
         });
         root.setColors(COL_ACCENT, COL_CARD);
-        mWeb = new WebView(this);
+        mWeb = new BgWebView(this);
         root.addView(mWeb, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(root);
@@ -358,12 +359,14 @@ public class MainActivity extends Activity {
         @Override
         public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
             injectAdCleaner();
+            injectBgPlay();
             super.onPageStarted(view, url, favicon);
         }
 
         @Override
         public void onPageFinished(WebView view, String url) {
             injectAdCleaner();
+            injectBgPlay();
             injectTweaks();
             injectAdSkipper();
             injectSponsorBlock();
@@ -647,6 +650,34 @@ public class MainActivity extends Activity {
 
     // --- SponsorBlock: skip crowd-sourced sponsor segments inside videos ---
 
+    // WebView hides the page (and YouTube then pauses) when the window goes
+    // away. Keep it "visible" while Background playback is on.
+    private static volatile boolean sBg = true;
+
+    private static class BgWebView extends WebView {
+        BgWebView(android.content.Context c) {
+            super(c);
+        }
+
+        @Override
+        protected void onWindowVisibilityChanged(int visibility) {
+            super.onWindowVisibilityChanged(sBg ? View.VISIBLE : visibility);
+        }
+    }
+
+    private void injectBgPlay() {
+        if (!sBg) return;
+        String js = "(function(){if(window.__tubifyBG)return;window.__tubifyBG=1;try{"
+                + "var vs=Object.getOwnPropertyDescriptor(Document.prototype,'visibilityState').get;"
+                + "Object.defineProperty(document,'hidden',{get:function(){return false;},configurable:true});"
+                + "Object.defineProperty(document,'visibilityState',{get:function(){return 'visible';},configurable:true});"
+                + "['visibilitychange','webkitvisibilitychange'].forEach(function(n){"
+                + "document.addEventListener(n,function(e){e.stopImmediatePropagation();},true);});"
+                + "var last='';setInterval(function(){var r=vs.call(document);"
+                + "if(r!==last){last=r;console.log('TUBIFY_TWEAK bg real='+r);}},1000);}catch(e){}})();";
+        mWeb.evaluateJavascript(js, null);
+    }
+
     private void injectSponsorBlock() {
         if (!mPrefs.getBoolean("sponsors", true)) return;
         // Segment data: SponsorBlock (sponsor.ajay.app), CC BY-NC-SA 4.0.
@@ -763,6 +794,19 @@ public class MainActivity extends Activity {
         sbNote.setPadding(dp(4), dp(2), dp(4), dp(6));
         content.addView(sbNote);
 
+content.addView(sectionLabel("PLAYBACK"));
+        content.addView(settingRow("Background playback", "Keeps playing when you leave the app or turn off the screen",
+                mPrefs.getBoolean("bgplay", true), (checked) -> {
+                    mPrefs.edit().putBoolean("bgplay", checked).apply();
+                    sBg = checked;
+                    if (checked && android.os.Build.VERSION.SDK_INT >= 33
+                            && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                            != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 71);
+                    }
+                    if (mWeb != null) mWeb.reload();
+                }));
+
         content.addView(sectionLabel("INTERFACE"));
         content.addView(themeRow(dialog));
         content.addView(settingRow("Hide Shorts", null,
@@ -780,8 +824,9 @@ public class MainActivity extends Activity {
 
         content.addView(actionRow("Reset to defaults", "Auto theme, ads and sponsors blocked, nothing hidden", () -> {
             mPrefs.edit().putString("theme", "auto").putBoolean("adblock", true).putBoolean("sponsors", true)
-                    .putBoolean("shorts", false).putBoolean("suggestions", false)
+                    .putBoolean("shorts", false).putBoolean("suggestions", false).putBoolean("bgplay", true)
                     .putBoolean("comments", false).putBoolean("home", false).apply();
+            sBg = true;
             resolveTheme();
             applyYtTheme();
             injectTweaks();
@@ -1200,12 +1245,27 @@ public class MainActivity extends Activity {
         mWeb.saveState(outState);
     }
 
+
+    // --- Background playback ---
+
     @Override
     protected void onPause() {
         super.onPause();
-        // Persist cookies (sign-in) without pausing playback: background
-        // audio keeps playing, matching the full Tubify app.
+        if (mPrefs != null && mPrefs.getBoolean("bgplay", true) && !isFinishing()) {
+            try {
+                startForegroundService(new Intent(this, PlaybackService.class));
+            } catch (Exception e) {
+                ErrLog.log("bgplay", "service start failed: " + e);
+            }
+        }
+        // Persist cookies (sign-in) without pausing the page.
         CookieManager.getInstance().flush();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        stopService(new Intent(this, PlaybackService.class));
     }
 
     @Override
