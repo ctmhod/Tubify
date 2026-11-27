@@ -135,4 +135,7 @@ grep -q "Segment data from SponsorBlock" "$OUT/sp0.xml" && log "PASS attribution
 ytx 70-sponsor-video "https://m.youtube.com/watch?v=j5HZgg6gXNo"
 grep -h "TUBIFY_TWEAK sponsor" "$OUT/logcat-70-sponsor-video.txt" | head -5 | tee -a "$R"
 grep -q "sponsor segments=[1-9]" "$OUT/logcat-70-sponsor-video.txt" && log "PASS sponsor segments fetched" || log "INFO no sponsor segment log (Full uses the extension)"
+log "== 15 full shorts/home"
+ytx 71-home-shorts-hidden "https://m.youtube.com/" --ez tubify_shorts true
+ytx 72-home-shorts-shown "https://m.youtube.com/" --ez tubify_shorts false
 log "DONE"
