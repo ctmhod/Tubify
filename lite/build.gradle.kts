@@ -10,8 +10,8 @@ android {
         applicationId = "com.tubify.lite"
         minSdk = 29
         targetSdk = 36
-        versionCode = 54
-        versionName = "0.1.54"
+        versionCode = 55
+        versionName = "0.1.55"
         resourceConfigurations.add("en")
     }
 
