@@ -152,4 +152,28 @@ adb logcat -d > "$OUT/logcat-pull.txt"
 n=$(grep -c "adclean on\|tubify-path\|shorts hider\|TUBIFY_TWEAK" "$OUT/logcat-pull.txt")
 log "INFO pull-refresh page markers after pull: $n"
 [ "$n" -gt 0 ] && log "PASS pull to refresh reloaded the page" || log "FAIL pull to refresh did not reload"
+log "== 17 background playback"
+adb shell am force-stop $PKG; adb logcat -c
+adb shell am start -a android.intent.action.VIEW -d "https://m.youtube.com/watch?v=jNQXAC9IVRw" -p $PKG >/dev/null 2>&1
+sleep $((W+14))
+adb shell input tap 160 190; sleep 6
+shot 90-bg-before
+adb shell input keyevent KEYCODE_HOME; sleep 8
+shot 91-bg-home
+adb shell dumpsys activity services $PKG > "$OUT/bg-services-home.txt" 2>&1
+adb shell dumpsys audio > "$OUT/bg-audio-home.txt" 2>&1
+grep -qi "PlaybackService" "$OUT/bg-services-home.txt" && log "PASS foreground service running after HOME" || log "FAIL no playback service after HOME"
+grep -i "foregroundServiceType\|isForeground" "$OUT/bg-services-home.txt" | head -3 | tee -a "$R"
+adb shell input keyevent KEYCODE_SLEEP; sleep 12
+adb shell dumpsys activity services $PKG > "$OUT/bg-services-off.txt" 2>&1
+grep -qi "PlaybackService" "$OUT/bg-services-off.txt" && log "PASS service still running with screen off" || log "FAIL service gone with screen off"
+adb shell dumpsys audio > "$OUT/bg-audio-off.txt" 2>&1
+grep -i "$PKG" "$OUT/bg-audio-off.txt" | head -5 | tee -a "$R"
+adb logcat -d | grep -i "bg real\|TUBIFY_TWEAK bg" | head -8 | tee -a "$R"
+if adb shell pidof $PKG | grep -q .; then log "PASS app alive in background"; else log "FAIL app died in background"; fi
+adb shell input keyevent KEYCODE_WAKEUP; adb shell wm dismiss-keyguard; sleep 2
+adb shell am start -n $PKG/.MainActivity >/dev/null 2>&1; sleep 5
+shot 92-bg-return
+adb shell dumpsys activity services $PKG > "$OUT/bg-services-back.txt" 2>&1
+grep -qi "PlaybackService" "$OUT/bg-services-back.txt" && log "FAIL service still running after return" || log "PASS service stopped after return"
 log "DONE"
