@@ -438,8 +438,8 @@ public class MainActivity extends Activity {
     // --- Tweak CSS injection ---------------------------------------------
 
     private void injectTweaks() {
-        boolean shorts = mPrefs.getBoolean("shorts", true);
-        boolean suggestions = mPrefs.getBoolean("suggestions", true);
+        boolean shorts = mPrefs.getBoolean("shorts", false);
+        boolean suggestions = mPrefs.getBoolean("suggestions", false);
         boolean comments = mPrefs.getBoolean("comments", false);
         StringBuilder css = new StringBuilder();
         if (shorts) css.append(
@@ -708,10 +708,10 @@ public class MainActivity extends Activity {
         content.addView(sectionLabel("INTERFACE"));
         content.addView(themeRow(dialog));
         content.addView(settingRow("Hide Shorts", null,
-                mPrefs.getBoolean("shorts", true),
+                mPrefs.getBoolean("shorts", false),
                 (checked) -> setTweak("shorts", checked)));
         content.addView(settingRow("Hide suggestions", null,
-                mPrefs.getBoolean("suggestions", true),
+                mPrefs.getBoolean("suggestions", false),
                 (checked) -> setTweak("suggestions", checked)));
         content.addView(settingRow("Hide comments", null,
                 mPrefs.getBoolean("comments", false),
@@ -720,9 +720,9 @@ public class MainActivity extends Activity {
                 mPrefs.getBoolean("home", false),
                 (checked) -> setTweak("home", checked)));
 
-        content.addView(actionRow("Reset to defaults", "Auto theme, ads and Shorts hidden", () -> {
+        content.addView(actionRow("Reset to defaults", "Auto theme, ads blocked, nothing hidden", () -> {
             mPrefs.edit().putString("theme", "auto").putBoolean("adblock", true)
-                    .putBoolean("shorts", true).putBoolean("suggestions", true)
+                    .putBoolean("shorts", false).putBoolean("suggestions", false)
                     .putBoolean("comments", false).putBoolean("home", false).apply();
             resolveTheme();
             applyYtTheme();
