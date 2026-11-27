@@ -223,7 +223,12 @@ public class MainActivity extends Activity {
             }
         });
 
-        mSession.setScrollDelegate((session, x, y) -> mScrollY = y);
+        mSession.setScrollDelegate(new GeckoSession.ScrollDelegate() {
+            @Override
+            public void onScrollChanged(GeckoSession session, int scrollX, int scrollY) {
+                mScrollY = scrollY;
+            }
+        });
         mSession.setNavigationDelegate(new GeckoSession.NavigationDelegate() {
             @Override
             public void onCanGoBack(GeckoSession session, boolean canGoBack) {
