@@ -107,6 +107,9 @@ public class MainActivity extends Activity {
     private WebExtension.Port mTweaksPort;
     private WebExtension mUbo;
     private boolean mCanGoBack;
+    private volatile int mScrollY;
+    private volatile boolean mFullScreen;
+    private volatile String mPagePath = "/";
     private boolean mPageLoaded;
 
     @Override
@@ -125,7 +128,18 @@ public class MainActivity extends Activity {
         resolveTheme();
         applyImmersive();
 
-        FrameLayout root = new FrameLayout(this);
+        PullRefreshLayout root = new PullRefreshLayout(this, new PullRefreshLayout.Host() {
+            @Override
+            public boolean canPull() {
+                return mSession != null && mScrollY <= 0 && !mFullScreen && !mPagePath.startsWith("/watch");
+            }
+
+            @Override
+            public void onRefresh() {
+                if (mSession != null) mSession.reload();
+            }
+        });
+        root.setColors(COL_ACCENT, COL_CARD);
         mView = new GeckoView(this);
         root.addView(mView, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -192,6 +206,7 @@ public class MainActivity extends Activity {
 
             @Override
             public void onFullScreen(GeckoSession session, boolean fullScreen) {
+                mFullScreen = fullScreen;
                 if (fullScreen) {
                     getWindow().getDecorView().setSystemUiVisibility(
                             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -208,6 +223,7 @@ public class MainActivity extends Activity {
             }
         });
 
+        mSession.setScrollDelegate((session, x, y) -> mScrollY = y);
         mSession.setNavigationDelegate(new GeckoSession.NavigationDelegate() {
             @Override
             public void onCanGoBack(GeckoSession session, boolean canGoBack) {
@@ -775,6 +791,8 @@ public class MainActivity extends Activity {
                                 runOnUiThread(() -> showSettings());
                             } else if ("log".equals(type)) {
                                 ErrLog.log("ext", ((JSONObject) message).optString("msg"));
+                            } else if ("path".equals(type)) {
+                                mPagePath = ((JSONObject) message).optString("path", "/");
                             } else if ("tweaks-ready".equals(type)) {
                                 String v = ((JSONObject) message).optString("version");
                                 mPrefs.edit().putString("diag_tweaks",
