@@ -698,9 +698,12 @@ public class MainActivity extends Activity {
         content.addView(subtitle);
 
         content.addView(sectionLabel("BLOCKING"));
-        content.addView(settingRow("Ad blocking", "Blocks ad requests, skips video ads",
-                mPrefs.getBoolean("adblock", true), (checked) ->
-                    mPrefs.edit().putBoolean("adblock", checked).apply()));
+        content.addView(settingRow("Block ads", "Blocks ads on YouTube",
+                mPrefs.getBoolean("adblock", true), (checked) -> {
+                    mPrefs.edit().putBoolean("adblock", checked).apply();
+                    // Reload so every ad layer follows the new setting right away.
+                    if (mWeb != null) mWeb.reload();
+                }));
 
         content.addView(sectionLabel("INTERFACE"));
         content.addView(themeRow(dialog));
