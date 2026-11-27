@@ -6,7 +6,7 @@
 // injected stylesheet survives in-page navigation. Also injects the Tubify
 // gear button into the YouTube header, right after the logo.
 
-const DEFAULTS = { shorts: true, suggestions: true, comments: false, home: false };
+const DEFAULTS = { shorts: false, suggestions: false, comments: false, home: false };
 
 const GEAR_CSS =
   "#tubify-gear{display:inline-flex;align-items:center;justify-content:center;" +
