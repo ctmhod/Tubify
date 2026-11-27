@@ -370,32 +370,16 @@ public class MainActivity extends Activity {
         content.addView(subtitle);
 
         content.addView(sectionLabel("BLOCKING"));
-        content.addView(settingRow(dialog, "uBlock Origin", "Recommended",
+        content.addView(settingRow(dialog, "Block ads", "Blocks ads on YouTube",
                 mPrefs.getBoolean("adblock", true), (checked) -> {
-                    mPrefs.edit().putBoolean("adblock", checked).apply();
+                    mPrefs.edit().putBoolean("adblock", checked)
+                            .putBoolean("adguard", false).putBoolean("abp", false).apply();
                     syncBlockers();
+                    // The extension switch is asynchronous; reload once it has applied.
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        if (mSession != null) mSession.reload();
+                    }, 900);
                 }));
-        content.addView(settingRow(dialog, "AdGuard AdBlocker", null,
-                mPrefs.getBoolean("adguard", false), (checked) -> {
-                    mPrefs.edit().putBoolean("adguard", checked).apply();
-                    syncBlockers();
-                }));
-        content.addView(settingRow(dialog, "AdBlock Plus", null,
-                mPrefs.getBoolean("abp", false), (checked) -> {
-                    mPrefs.edit().putBoolean("abp", checked).apply();
-                    syncBlockers();
-                }));
-        int blockersOn = (mPrefs.getBoolean("adblock", true) ? 1 : 0)
-                + (mPrefs.getBoolean("adguard", false) ? 1 : 0)
-                + (mPrefs.getBoolean("abp", false) ? 1 : 0);
-        if (blockersOn > 1) {
-            TextView warn = new TextView(this);
-            warn.setText("Running several blockers can slow down page loads.");
-            warn.setTextColor(0xFFFFB74D);
-            warn.setTextSize(12);
-            warn.setPadding(dp(4), 0, dp(4), dp(6));
-            content.addView(warn);
-        }
 
         content.addView(sectionLabel("INTERFACE"));
         content.addView(themeRow(dialog));
@@ -412,7 +396,7 @@ public class MainActivity extends Activity {
                 mPrefs.getBoolean("home", false),
                 (checked) -> setTweak("home", checked)));
 
-        content.addView(actionRow("Reset to defaults", "Auto theme, uBlock on, Shorts hidden", () -> {
+        content.addView(actionRow("Reset to defaults", "Auto theme, ads blocked, Shorts hidden", () -> {
             mPrefs.edit().putString("theme", "auto").putBoolean("adblock", true)
                     .putBoolean("adguard", false).putBoolean("abp", false)
                     .putBoolean("shorts", true).putBoolean("suggestions", true)
@@ -951,9 +935,7 @@ public class MainActivity extends Activity {
         String abp = mPrefs.getString("diag_abp", "off");
         return "Tweaks extension: " + tweaks + "\n"
                 + "App bridge: " + (bridge ? "connected" : "not connected") + "\n"
-                + "uBlock Origin: " + ubo + "\n"
-                + "AdGuard: " + ag + "\n"
-                + "AdBlock Plus: " + abp;
+                + "Ad blocking: " + ubo;
     }
 
     private void applyImmersive() {
