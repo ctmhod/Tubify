@@ -13,7 +13,7 @@ const GEAR_CSS =
   "width:28px;height:28px;margin-left:-3px;padding:0;border:1px solid #20232E;border-radius:50%;" +
   "background:#12141C;color:#E8EAF0;font-size:16px;line-height:1;" +
   "vertical-align:middle;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}" +
-  "html.tubify-home #tubify-gear{margin-left:6px;}" +
+  "html.tubify-home #tubify-gear{margin-left:1px;}" +
   "#tubify-gear:active{background:#20232E;}";
 
 // Always-on: remove YouTube's "Open App" prompts (button in the top bar,
