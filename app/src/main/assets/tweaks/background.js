@@ -182,6 +182,9 @@ browser.runtime.onMessage.addListener((msg, sender) => {
     applied.delete(sender.tab.id);
     applyToTab(sender.tab.id);
   }
+  if (msg && msg.type === "tubify-path" && nativePort) {
+    try { nativePort.postMessage({ type: "path", path: String(msg.path || "/") }); } catch (e) {}
+  }
   if (msg && msg.type === "tubify-sb") {
     return sponsorSegments(msg.id);
   }
