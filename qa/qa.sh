@@ -153,8 +153,12 @@ n=$(grep -c "adclean on\|tubify-path\|shorts hider\|TUBIFY_TWEAK" "$OUT/logcat-p
 log "INFO pull-refresh page markers after pull: $n"
 [ "$n" -gt 0 ] && log "PASS pull to refresh reloaded the page" || log "FAIL pull to refresh did not reload"
 log "== 17 background playback"
+launch_settings dark
+adb shell input swipe 160 500 160 100 300; sleep 1; adb shell input swipe 160 500 160 200 300; sleep 1
+shot 93-bg-row-default-off
+dump bgrow
 adb shell am force-stop $PKG; adb logcat -c
-adb shell am start -a android.intent.action.VIEW -d "https://m.youtube.com/watch?v=jNQXAC9IVRw" -p $PKG >/dev/null 2>&1
+adb shell am start -a android.intent.action.VIEW -d "https://m.youtube.com/watch?v=jNQXAC9IVRw" -p $PKG --ez tubify_bgplay true >/dev/null 2>&1
 sleep $((W+14))
 adb shell input tap 160 190; sleep 6
 shot 90-bg-before
