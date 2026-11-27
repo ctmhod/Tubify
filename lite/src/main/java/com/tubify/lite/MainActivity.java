@@ -920,6 +920,7 @@ public class MainActivity extends Activity {
         mPrefs.edit().putBoolean(key, checked).apply();
         injectTweaks();
         injectAdSkipper();
+        if (mWeb != null) mWeb.reload();
     }
 
 
