@@ -117,6 +117,11 @@ public class MainActivity extends Activity {
         mPrefs = getSharedPreferences("tubify", MODE_PRIVATE);
         String forcedTheme = getIntent().getStringExtra("tubify_theme");
         if (forcedTheme != null) mPrefs.edit().putString("theme", forcedTheme).apply();
+        for (String k : new String[]{"shorts", "suggestions", "comments", "home", "sponsors"}) {
+            if (getIntent().hasExtra("tubify_" + k)) {
+                mPrefs.edit().putBoolean(k, getIntent().getBooleanExtra("tubify_" + k, false)).apply();
+            }
+        }
         resolveTheme();
         applyImmersive();
 
@@ -386,10 +391,8 @@ public class MainActivity extends Activity {
         content.addView(settingRow(dialog, "Block sponsors", "Skips sponsor segments inside videos",
                 mPrefs.getBoolean("sponsors", true), (checked) -> {
                     mPrefs.edit().putBoolean("sponsors", checked).apply();
-                    syncBlockers();
-                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                        if (mSession != null) mSession.reload();
-                    }, 900);
+                    sendTweaksSettings();
+                    reloadSoon();
                 }));
         TextView sbNote = new TextView(this);
         sbNote.setText("Segment data from SponsorBlock (sponsor.ajay.app), CC BY-NC-SA 4.0");
@@ -422,7 +425,7 @@ public class MainActivity extends Activity {
             applyYtTheme();
             syncBlockers();
             sendTweaksSettings();
-            if (mSession != null) mSession.reload();
+            reloadSoon();
             dialog.dismiss();
             showSettings();
         }));
@@ -488,6 +491,26 @@ public class MainActivity extends Activity {
     private void setTweak(String key, boolean checked) {
         mPrefs.edit().putBoolean(key, checked).apply();
         sendTweaksSettings();
+        reloadSoon();
+    }
+
+    // Reload the page shortly after a setting changes so it applies right away.
+    private void reloadSoon() {
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (mSession != null) mSession.reload();
+        }, 600);
+    }
+
+    // v0.1.49 installed the SponsorBlock extension; sponsor skipping is now built in.
+    private void removeLegacySponsorExtension() {
+        mExtController.list().accept(extensions -> {
+            if (extensions == null) return;
+            for (WebExtension e : extensions) {
+                if (e.id != null && e.id.equals(SB_ID)) {
+                    mExtController.uninstall(e);
+                }
+            }
+        });
     }
 
 
@@ -796,6 +819,7 @@ public class MainActivity extends Activity {
             msg.put("suggestions", mPrefs.getBoolean("suggestions", false));
             msg.put("comments", mPrefs.getBoolean("comments", false));
             msg.put("home", mPrefs.getBoolean("home", false));
+            msg.put("sponsors", mPrefs.getBoolean("sponsors", true));
             mTweaksPort.postMessage(msg);
         } catch (JSONException ignored) {
         }
@@ -805,7 +829,7 @@ public class MainActivity extends Activity {
         syncBlocker("adblock", true, "diag_ubo", "ubo", UBO_ID, UBO_XPI, "uBlock Origin");
         syncBlocker("adguard", false, "diag_ag", "ag", AG_ID, AG_XPI, "AdGuard");
         syncBlocker("abp", false, "diag_abp", "abp", ABP_ID, ABP_XPI, "AdBlock Plus");
-        syncBlocker("sponsors", true, "diag_sb", "sb", SB_ID, SB_XPI, "SponsorBlock");
+        removeLegacySponsorExtension();
     }
 
     private void syncBlocker(String prefKey, boolean def, String diagKey, String installedKey,
@@ -954,7 +978,7 @@ public class MainActivity extends Activity {
         return "Tweaks extension: " + tweaks + "\n"
                 + "App bridge: " + (bridge ? "connected" : "not connected") + "\n"
                 + "Ad blocking: " + ubo + "\n"
-                + "Sponsors: " + mPrefs.getString("diag_sb", "not installed yet");
+                + "Sponsors: " + (mPrefs.getBoolean("sponsors", true) ? "active" : "off");
     }
 
     private void applyImmersive() {
