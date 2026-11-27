@@ -128,7 +128,7 @@ public class MainActivity extends Activity {
         mPrefs = getSharedPreferences("tubify_lite", MODE_PRIVATE);
         String forcedTheme = getIntent().getStringExtra("tubify_theme");
         if (forcedTheme != null) mPrefs.edit().putString("theme", forcedTheme).apply();
-        for (String k : new String[]{"shorts", "suggestions", "comments", "home", "adblock"}) {
+        for (String k : new String[]{"shorts", "suggestions", "comments", "home", "adblock", "sponsors"}) {
             if (getIntent().hasExtra("tubify_" + k)) {
                 mPrefs.edit().putBoolean(k, getIntent().getBooleanExtra("tubify_" + k, false)).apply();
             }
@@ -353,6 +353,7 @@ public class MainActivity extends Activity {
             injectAdCleaner();
             injectTweaks();
             injectAdSkipper();
+            injectSponsorBlock();
             injectGear();
             if (getIntent().getBooleanExtra("tubify_dump_dom", false)) {
                 final WebView wv = view;
@@ -631,6 +632,39 @@ public class MainActivity extends Activity {
         mWeb.evaluateJavascript(js, null);
     }
 
+    // --- SponsorBlock: skip crowd-sourced sponsor segments inside videos ---
+
+    private void injectSponsorBlock() {
+        if (!mPrefs.getBoolean("sponsors", true)) return;
+        // Segment data: SponsorBlock (sponsor.ajay.app), CC BY-NC-SA 4.0.
+        // Only the first 4 hex chars of sha256(videoId) are sent, so the
+        // server never learns exactly which video is being watched.
+        String js = "(function(){if(window.__tubifySB)return;window.__tubifySB=1;"
+                + "var cur=null,segs=[],last=-1;"
+                + "function vid(){var m=location.search.match(/[?&]v=([\\w-]{11})/);"
+                + "return (location.pathname==='/watch'&&m)?m[1]:null;}"
+                + "function load(id){segs=[];"
+                + "if(!window.crypto||!crypto.subtle||!window.TextEncoder)return;"
+                + "crypto.subtle.digest('SHA-256',new TextEncoder().encode(id)).then(function(b){"
+                + "var a=new Uint8Array(b),h='';for(var i=0;i<2;i++){h+=('0'+a[i].toString(16)).slice(-2);}"
+                + "return fetch('https://sponsor.ajay.app/api/skipSegments/'+h"
+                + "+'?categories='+encodeURIComponent('[\"sponsor\",\"selfpromo\",\"interaction\"]')"
+                + "+'&actionTypes='+encodeURIComponent('[\"skip\"]'));})"
+                + ".then(function(r){return r.ok?r.json():[];})"
+                + ".then(function(l){if(cur!==id)return;for(var i=0;i<l.length;i++){"
+                + "if(l[i].videoID===id){segs=l[i].segments.map(function(x){return x.segment;});}}"
+                + "console.log('TUBIFY_TWEAK sponsor segments='+segs.length+' id='+id);})"
+                + ".catch(function(){});}"
+                + "setInterval(function(){try{var id=vid();"
+                + "if(id!==cur){cur=id;segs=[];last=-1;if(id)load(id);}"
+                + "var v=document.querySelector('video');if(!v||!segs.length||v.paused)return;"
+                + "var t=v.currentTime;for(var i=0;i<segs.length;i++){"
+                + "if(t>=segs[i][0]&&t<segs[i][1]-0.4&&last!==i){last=i;"
+                + "v.currentTime=segs[i][1];console.log('TUBIFY_TWEAK sponsor skip '+segs[i][0]+'-'+segs[i][1]);break;}}"
+                + "}catch(e){}},500);})();";
+        mWeb.evaluateJavascript(js, null);
+    }
+
     private static String jsString(String s) {
         StringBuilder b = new StringBuilder("'");
         for (int i = 0; i < s.length(); i++) {
@@ -704,6 +738,17 @@ public class MainActivity extends Activity {
                     // Reload so every ad layer follows the new setting right away.
                     if (mWeb != null) mWeb.reload();
                 }));
+        content.addView(settingRow("Block sponsors", "Skips sponsor segments inside videos",
+                mPrefs.getBoolean("sponsors", true), (checked) -> {
+                    mPrefs.edit().putBoolean("sponsors", checked).apply();
+                    if (mWeb != null) mWeb.reload();
+                }));
+        TextView sbNote = new TextView(this);
+        sbNote.setText("Segment data from SponsorBlock (sponsor.ajay.app), CC BY-NC-SA 4.0");
+        sbNote.setTextColor(COL_TEXT2);
+        sbNote.setTextSize(11);
+        sbNote.setPadding(dp(4), dp(2), dp(4), dp(6));
+        content.addView(sbNote);
 
         content.addView(sectionLabel("INTERFACE"));
         content.addView(themeRow(dialog));
@@ -720,8 +765,8 @@ public class MainActivity extends Activity {
                 mPrefs.getBoolean("home", false),
                 (checked) -> setTweak("home", checked)));
 
-        content.addView(actionRow("Reset to defaults", "Auto theme, ads blocked, nothing hidden", () -> {
-            mPrefs.edit().putString("theme", "auto").putBoolean("adblock", true)
+        content.addView(actionRow("Reset to defaults", "Auto theme, ads and sponsors blocked, nothing hidden", () -> {
+            mPrefs.edit().putString("theme", "auto").putBoolean("adblock", true).putBoolean("sponsors", true)
                     .putBoolean("shorts", false).putBoolean("suggestions", false)
                     .putBoolean("comments", false).putBoolean("home", false).apply();
             resolveTheme();
