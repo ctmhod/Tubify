@@ -10,7 +10,7 @@ const DEFAULTS = { shorts: true, suggestions: true, comments: false, home: false
 
 const GEAR_CSS =
   "#tubify-gear{display:inline-flex;align-items:center;justify-content:center;" +
-  "width:28px;height:28px;margin-left:-10px;padding:0;border:1px solid #20232E;border-radius:50%;" +
+  "width:28px;height:28px;margin-left:6px;padding:0;border:1px solid #20232E;border-radius:50%;" +
   "background:#12141C;color:#E8EAF0;font-size:16px;line-height:1;" +
   "vertical-align:middle;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}" +
   "#tubify-gear:active{background:#20232E;}";
@@ -26,7 +26,7 @@ const OPENAPP_CSS =
   " { display: none !important; }" +
   // YouTube logo about 10% larger via transform, so the gear keeps its size.
   "ytm-home-logo svg, ytm-home-logo img, ytm-topbar-logo-renderer svg" +
-  " { transform: scale(1.1); transform-origin: left center; margin-right: 22px; }";
+  " { transform: scale(1.1); transform-origin: left center; margin-right: 8px; }";
 
 const CSS = {
   shorts: [
