@@ -133,7 +133,7 @@ public class MainActivity extends Activity {
                 mPrefs.edit().putBoolean(k, getIntent().getBooleanExtra("tubify_" + k, false)).apply();
             }
         }
-        sBg = mPrefs.getBoolean("bgplay", true);
+        sBg = mPrefs.getBoolean("bgplay", false);
         resolveTheme();
         applyImmersive();
 
@@ -652,7 +652,7 @@ public class MainActivity extends Activity {
 
     // WebView hides the page (and YouTube then pauses) when the window goes
     // away. Keep it "visible" while Background playback is on.
-    private static volatile boolean sBg = true;
+    private static volatile boolean sBg = false;
 
     private static class BgWebView extends WebView {
         BgWebView(android.content.Context c) {
@@ -796,14 +796,10 @@ public class MainActivity extends Activity {
 
 content.addView(sectionLabel("PLAYBACK"));
         content.addView(settingRow("Background playback", "Keeps playing when you leave the app or turn off the screen",
-                mPrefs.getBoolean("bgplay", true), (checked) -> {
+                mPrefs.getBoolean("bgplay", false), (checked) -> {
                     mPrefs.edit().putBoolean("bgplay", checked).apply();
                     sBg = checked;
-                    if (checked && android.os.Build.VERSION.SDK_INT >= 33
-                            && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                            != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                        requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 71);
-                    }
+                    if (checked) askBgPermissions();
                     if (mWeb != null) mWeb.reload();
                 }));
 
@@ -824,9 +820,9 @@ content.addView(sectionLabel("PLAYBACK"));
 
         content.addView(actionRow("Reset to defaults", "Auto theme, ads and sponsors blocked, nothing hidden", () -> {
             mPrefs.edit().putString("theme", "auto").putBoolean("adblock", true).putBoolean("sponsors", true)
-                    .putBoolean("shorts", false).putBoolean("suggestions", false).putBoolean("bgplay", true)
+                    .putBoolean("shorts", false).putBoolean("suggestions", false).putBoolean("bgplay", false)
                     .putBoolean("comments", false).putBoolean("home", false).apply();
-            sBg = true;
+            sBg = false;
             resolveTheme();
             applyYtTheme();
             injectTweaks();
@@ -1248,10 +1244,41 @@ content.addView(sectionLabel("PLAYBACK"));
 
     // --- Background playback ---
 
+    // Permissions Background playback needs: notifications, then Unrestricted battery use.
+    private void askBgPermissions() {
+        if (android.os.Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 71);
+            return;
+        }
+        askBattery();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 71) askBattery();
+    }
+
+    private void askBattery() {
+        try {
+            android.os.PowerManager pm = getSystemService(android.os.PowerManager.class);
+            if (pm != null && pm.isIgnoringBatteryOptimizations(getPackageName())) return;
+            startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    android.net.Uri.parse("package:" + getPackageName())));
+        } catch (Exception e) {
+            try {
+                startActivity(new Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
-        if (mPrefs != null && mPrefs.getBoolean("bgplay", true) && !isFinishing()) {
+        if (mPrefs != null && mPrefs.getBoolean("bgplay", false) && !isFinishing()) {
             try {
                 startForegroundService(new Intent(this, PlaybackService.class));
             } catch (Exception e) {
