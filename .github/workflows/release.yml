@@ -60,21 +60,21 @@ jobs:
           mkdir -p out
           for f in app/build/outputs/apk/release/*.apk; do
             case "$f" in
-              *universal-release.apk) cp "$f" out/Tubify-v0.1.50-0-universal.apk ;;
-              *arm64-v8a-release.apk) cp "$f" out/Tubify-v0.1.50-arm64-v8a.apk ;;
-              *armeabi-v7a-release.apk) cp "$f" out/Tubify-v0.1.50-armeabi-v7a.apk ;;
-              *x86_64-release.apk) cp "$f" out/Tubify-v0.1.50-x86_64.apk ;;
+              *universal-release.apk) cp "$f" out/Tubify-v0.1.51-0-universal.apk ;;
+              *arm64-v8a-release.apk) cp "$f" out/Tubify-v0.1.51-arm64-v8a.apk ;;
+              *armeabi-v7a-release.apk) cp "$f" out/Tubify-v0.1.51-armeabi-v7a.apk ;;
+              *x86_64-release.apk) cp "$f" out/Tubify-v0.1.51-x86_64.apk ;;
             esac
           done
           ls -l out
-          for n in 0-universal arm64-v8a armeabi-v7a x86_64; do test -f "out/Tubify-v0.1.50-$n.apk"; done
-          cp lite/build/outputs/apk/release/lite-release.apk out/Tubify-Lite-v0.1.50.apk
-          test -f out/Tubify-Lite-v0.1.50.apk
+          for n in 0-universal arm64-v8a armeabi-v7a x86_64; do test -f "out/Tubify-v0.1.51-$n.apk"; done
+          cp lite/build/outputs/apk/release/lite-release.apk out/Tubify-Lite-v0.1.51.apk
+          test -f out/Tubify-Lite-v0.1.51.apk
 
       - name: Verify APK contents
         run: |
           set -e
-          for a in out/Tubify-v0.1.50-*.apk; do
+          for a in out/Tubify-v0.1.51-*.apk; do
             echo "== $a =="
             unzip -l "$a" | grep -q 'assets/tweaks/manifest.json'
             unzip -l "$a" | grep -q 'assets/tweaks/content.js'
@@ -88,8 +88,8 @@ jobs:
             unzip -p "$a" assets/tweaks/background.js | grep -q 'insertCSS'
             du -h "$a"
           done
-          echo "== out/Tubify-Lite-v0.1.50.apk =="
-          L=out/Tubify-Lite-v0.1.50.apk
+          echo "== out/Tubify-Lite-v0.1.51.apk =="
+          L=out/Tubify-Lite-v0.1.51.apk
           stat -c%s "$L"
           unzip -l "$L"
           test $(stat -c%s "$L") -lt 1000000
@@ -183,7 +183,7 @@ jobs:
           name: smoke-lite
           path: smoke-lite
 
-      - name: Publish release v0.1.50
+      - name: Publish release v0.1.51
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -191,7 +191,7 @@ jobs:
           cd out
           SIZES=""
           for f in *.apk; do SIZES="$SIZES $f: $(du -h "$f" | cut -f1)."; done
-          NOTES="Tubify v0.1.50: Changing any setting now refreshes the page, in both apps. Full: Hide Shorts no longer empties the home feed, Hide comments works, and sponsor skipping is built in (no SponsorBlock extension or Skip to highlight label). Requires Android 10+. Sizes:$SIZES Start with the universal APK."
-          gh release view v0.1.50 >/dev/null 2>&1 && gh release delete v0.1.50 --yes || true
-          gh release create v0.1.50 --title "Tubify v0.1.50" --notes "$NOTES" --latest *.apk
+          NOTES="Tubify v0.1.51: Both apps now rotate with your phone (portrait and landscape) when auto-rotate is on. Changing any setting refreshes the page. Full: Hide Shorts no longer empties the home feed, Hide comments works, and sponsor skipping is built in (no Skip to highlight label). Requires Android 10+. Sizes:$SIZES Start with the universal APK."
+          gh release view v0.1.51 >/dev/null 2>&1 && gh release delete v0.1.51 --yes || true
+          gh release create v0.1.51 --title "Tubify v0.1.51" --notes "$NOTES" --latest *.apk
           cd ..
