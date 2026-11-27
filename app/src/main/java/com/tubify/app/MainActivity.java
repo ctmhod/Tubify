@@ -120,7 +120,7 @@ public class MainActivity extends Activity {
         mPrefs = getSharedPreferences("tubify", MODE_PRIVATE);
         String forcedTheme = getIntent().getStringExtra("tubify_theme");
         if (forcedTheme != null) mPrefs.edit().putString("theme", forcedTheme).apply();
-        for (String k : new String[]{"shorts", "suggestions", "comments", "home", "sponsors"}) {
+        for (String k : new String[]{"shorts", "suggestions", "comments", "home", "sponsors", "bgplay"}) {
             if (getIntent().hasExtra("tubify_" + k)) {
                 mPrefs.edit().putBoolean(k, getIntent().getBooleanExtra("tubify_" + k, false)).apply();
             }
@@ -422,6 +422,19 @@ public class MainActivity extends Activity {
         sbNote.setPadding(dp(4), dp(2), dp(4), dp(6));
         content.addView(sbNote);
 
+content.addView(sectionLabel("PLAYBACK"));
+        content.addView(settingRow(dialog, "Background playback", "Keeps playing when you leave the app or turn off the screen",
+                mPrefs.getBoolean("bgplay", true), (checked) -> {
+                    mPrefs.edit().putBoolean("bgplay", checked).apply();
+                    sendTweaksSettings();
+                    if (checked && android.os.Build.VERSION.SDK_INT >= 33
+                            && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                            != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 71);
+                    }
+                    reloadSoon();
+                }));
+
         content.addView(sectionLabel("INTERFACE"));
         content.addView(themeRow(dialog));
         content.addView(settingRow(dialog, "Hide Shorts", null,
@@ -441,7 +454,7 @@ public class MainActivity extends Activity {
             mPrefs.edit().putString("theme", "auto").putBoolean("adblock", true).putBoolean("sponsors", true)
                     .putBoolean("adguard", false).putBoolean("abp", false)
                     .putBoolean("shorts", false).putBoolean("suggestions", false)
-                    .putBoolean("comments", false).putBoolean("home", false).apply();
+                    .putBoolean("comments", false).putBoolean("home", false).putBoolean("bgplay", true).apply();
             resolveTheme();
             applyYtTheme();
             syncBlockers();
@@ -843,6 +856,7 @@ public class MainActivity extends Activity {
             msg.put("comments", mPrefs.getBoolean("comments", false));
             msg.put("home", mPrefs.getBoolean("home", false));
             msg.put("sponsors", mPrefs.getBoolean("sponsors", true));
+            msg.put("bgplay", mPrefs.getBoolean("bgplay", true));
             mTweaksPort.postMessage(msg);
         } catch (JSONException ignored) {
         }
@@ -1023,6 +1037,28 @@ public class MainActivity extends Activity {
         } else {
             moveTaskToBack(true);
         }
+    }
+
+
+    // --- Background playback ---
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mPrefs != null && mPrefs.getBoolean("bgplay", true) && !isFinishing()) {
+            try {
+                startForegroundService(new Intent(this, PlaybackService.class));
+            } catch (Exception e) {
+                ErrLog.log("bgplay", "service start failed: " + e);
+            }
+        }
+        if (mSession != null && mPrefs.getBoolean("bgplay", true)) mSession.setActive(true);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        stopService(new Intent(this, PlaybackService.class));
     }
 
     @Override
