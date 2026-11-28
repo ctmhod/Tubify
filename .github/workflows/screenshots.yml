@@ -27,7 +27,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ matrix.name }}" = lite ]; then
-            gh release download ${{ inputs.tag }} -p 'Tubify-Lite-*.apk' -O app.apk
+            gh release download ${{ inputs.tag }} -p 'Tubify-Lite-*-x86_64.apk' -O app.apk || gh release download ${{ inputs.tag }} -p 'Tubify-Lite-*.apk' -O app.apk
           else
             gh release download ${{ inputs.tag }} -p '*-x86_64.apk' -O app.apk
           fi

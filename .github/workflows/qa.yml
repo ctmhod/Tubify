@@ -46,7 +46,7 @@ jobs:
           arch: x86_64
           emulator-options: -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -memory ${{ matrix.mem }}
           disable-animations: true
-          script: bash qa/qa.sh ${{ matrix.pkg }} "$(ls apks/new/*.apk | head -1)" "$(ls apks/old/*.apk | head -1)" qa-out-${{ matrix.name }} ${{ matrix.wait }}
+          script: bash qa/qa.sh ${{ matrix.pkg }} "$(ls apks/new/*-x86_64.apk 2>/dev/null || ls apks/new/*.apk | head -1)" "$(ls apks/old/*-x86_64.apk 2>/dev/null || ls apks/old/*.apk | head -1)" qa-out-${{ matrix.name }} ${{ matrix.wait }}
       - name: Upload QA evidence
         if: always()
         uses: actions/upload-artifact@v4

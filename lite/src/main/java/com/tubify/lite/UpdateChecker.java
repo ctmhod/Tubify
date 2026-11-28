@@ -73,7 +73,7 @@ public class UpdateChecker {
                         for (int i = 0; i < assets.length(); i++) {
                             JSONObject a = assets.getJSONObject(i);
                             String n = a.optString("name", "");
-                            if (n.startsWith(ASSET_PREFIX) && n.endsWith(".apk") && n.contains(abi)) {
+                            if (n.startsWith(ASSET_PREFIX) && n.endsWith(".apk") && n.endsWith("-" + abi + ".apk")) {
                                 name = n;
                                 url = a.optString("browser_download_url");
                                 size = a.optLong("size");
