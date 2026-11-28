@@ -2,6 +2,16 @@
 
 A minimal YouTube client for Android in two flavors. No ads, no Shorts, no suggestions, no comments. Just YouTube.
 
+## Screenshots
+
+Tubify v0.1.56 on an Android emulator.
+
+<p align="center">
+  <img src="docs/screenshots/01-search.png" width="220" alt="YouTube search results inside Tubify">
+  <img src="docs/screenshots/02-settings.png" width="220" alt="Tubify settings: blocking, playback and theme">
+  <img src="docs/screenshots/03-settings-more.png" width="220" alt="More Tubify settings">
+</p>
+
 ## Two variants
 
 | | **Tubify** (Full) | **Tubify Lite** |
