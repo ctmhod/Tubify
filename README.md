@@ -8,12 +8,30 @@ A minimal YouTube client for Android in two flavors. No ads, no Shorts, no sugge
 
 ## Screenshots
 
-Tubify v0.1.56 on an Android emulator.
+Tubify v0.1.57 on an Android emulator.
+
+Tubify (Full):
 
 <p align="center">
-  <img src="docs/screenshots/01-search.png" width="220" alt="YouTube search results inside Tubify">
-  <img src="docs/screenshots/02-settings.png" width="220" alt="Tubify settings: blocking, playback and theme">
-  <img src="docs/screenshots/03-settings-more.png" width="220" alt="More Tubify settings">
+  <img src="docs/screenshots/full/01-search.png" width="200" alt="Quran search results inside Tubify">
+  <img src="docs/screenshots/full/02-settings-blocking.png" width="200" alt="Tubify settings: ad and sponsor blocking">
+  <img src="docs/screenshots/full/03-settings-interface.png" width="200" alt="Tubify settings: playback and interface">
+  <img src="docs/screenshots/full/04-settings-about.png" width="200" alt="Tubify settings: about and check for updates">
+  <img src="docs/screenshots/full/05-theme-chooser.png" width="200" alt="Theme chooser: auto, dark or light">
+  <img src="docs/screenshots/full/06-update-latest.png" width="200" alt="Check for updates: you are on the latest version">
+  <img src="docs/screenshots/full/07-error-log.png" width="200" alt="Tubify error log">
+</p>
+
+Tubify Lite:
+
+<p align="center">
+  <img src="docs/screenshots/lite/01-search.png" width="200" alt="Quran search results inside Tubify Lite">
+  <img src="docs/screenshots/lite/02-settings-blocking.png" width="200" alt="Tubify Lite settings: ad and sponsor blocking">
+  <img src="docs/screenshots/lite/03-settings-interface.png" width="200" alt="Tubify Lite settings: playback and interface">
+  <img src="docs/screenshots/lite/04-settings-about.png" width="200" alt="Tubify Lite settings: about and check for updates">
+  <img src="docs/screenshots/lite/05-theme-chooser.png" width="200" alt="Theme chooser: auto, dark or light">
+  <img src="docs/screenshots/lite/06-update-latest.png" width="200" alt="Check for updates: you are on the latest version">
+  <img src="docs/screenshots/lite/07-error-log.png" width="200" alt="Tubify Lite error log">
 </p>
 
 ## Two variants
