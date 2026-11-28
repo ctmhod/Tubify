@@ -183,4 +183,39 @@ adb shell am start -n $PKG/.MainActivity >/dev/null 2>&1; sleep 5
 shot 92-bg-return
 adb shell dumpsys activity services $PKG > "$OUT/bg-services-back.txt" 2>&1
 grep -qi "PlaybackService" "$OUT/bg-services-back.txt" && log "FAIL service still running after return" || log "PASS service stopped after return"
+log "== 18 check for updates"
+# a) latest build reports "You are on the latest version"
+adb shell am force-stop $PKG
+adb shell am start -n $PKG/.MainActivity -e tubify_theme dark --ez tubify_open_settings true >/dev/null; sleep $W
+adb shell input swipe 160 500 160 100 300; sleep 1
+tap "Check for updates"; sleep 14; dump uc1; shot 95-update-latest
+grep -q "You are on the latest version" "$OUT/uc1.xml" && log "PASS latest build says on latest version" || log "FAIL latest build did not say on latest version"
+adb shell input keyevent 4; sleep 1
+# b) same build posing as v0.1.56 sees the update, downloads it, installs it
+adb shell am force-stop $PKG
+adb shell am start -n $PKG/.MainActivity -e tubify_theme dark --ez tubify_open_settings true -e tubify_fake_version 0.1.56 >/dev/null; sleep $W
+adb shell input swipe 160 500 160 100 300; sleep 1
+tap "Check for updates"; sleep 14; dump uc2; shot 96-update-available
+grep -q "Update available: v0.1.57" "$OUT/uc2.xml" && log "PASS update to v0.1.57 offered" || log "FAIL update not offered"
+tap "Download"
+for i in $(seq 1 60); do dump ucd; grep -q "Ready to install" "$OUT/ucd.xml" && break; sleep 10; done
+shot 97-update-downloaded
+grep -q "Ready to install" "$OUT/ucd.xml" && log "PASS update APK downloaded in app" || log "FAIL update download did not finish"
+tap "Install"; sleep 5; dump ucp; shot 98-update-permission
+if grep -q "Allow from this source" "$OUT/ucp.xml"; then
+  tap "Allow from this source"; sleep 2; adb shell input keyevent 4; sleep 2
+  tap "Install"; sleep 5
+fi
+dump uci; shot 99-update-installer
+if grep -q 'text="Update"' "$OUT/uci.xml"; then tap "Update"; elif grep -q 'text="Install"' "$OUT/uci.xml"; then tap "Install"; fi
+for i in $(seq 1 36); do dump ucd2; grep -qE "App updated|App installed" "$OUT/ucd2.xml" && break; sleep 5; done
+shot 100-update-done
+grep -qE "App updated|App installed" "$OUT/ucd2.xml" && log "PASS system installer installed the downloaded update" || log "FAIL system update did not complete"
+grep -qE "text="Done"" "$OUT/ucd2.xml" && tap "Done"; sleep 2
+adb shell am force-stop $PKG
+adb shell am start -n $PKG/.MainActivity -e tubify_theme dark --ez tubify_open_settings true >/dev/null; sleep $W
+dump ucv
+grep -q "v0.1.57" "$OUT/ucv.xml" && log "PASS app runs v0.1.57 after self-update" || log "FAIL version after self-update not v0.1.57"
+fatal update
+
 log "DONE"

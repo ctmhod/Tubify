@@ -832,6 +832,9 @@ content.addView(sectionLabel("PLAYBACK"));
             showSettings();
         }));
 
+        content.addView(sectionLabel("ABOUT"));
+        content.addView(actionRow("Check for updates", "Look for a newer version and install it", this::showUpdateDialog));
+
         content.addView(sectionLabel("DEVELOPER"));
         content.addView(linkRow(dialog, "Source code", "github.com/ctmhod/Tubify", "https://github.com/ctmhod/Tubify"));
         content.addView(linkRow(dialog, "Developer", "@ctmhod on Telegram", "https://t.me/ctmhod"));
@@ -1338,6 +1341,152 @@ content.addView(sectionLabel("PLAYBACK"));
             }
         } catch (Throwable ignored) {
         }
+    }
+
+    // --- Check for updates -------------------------------------------------
+
+    private void showUpdateDialog() {
+        final Dialog d = new Dialog(this);
+        d.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(COL_BASE);
+        bg.setCornerRadius(dp(20));
+        box.setBackground(bg);
+        box.setPadding(dp(20), dp(18), dp(20), dp(14));
+
+        TextView title = new TextView(this);
+        title.setText("Check for updates");
+        title.setTextColor(COL_TEXT);
+        title.setTextSize(18);
+        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        box.addView(title);
+
+        final TextView status = new TextView(this);
+        status.setTextColor(COL_TEXT2);
+        status.setTextSize(14);
+        status.setPadding(0, dp(10), 0, dp(6));
+        box.addView(status);
+
+        final android.widget.ProgressBar bar = new android.widget.ProgressBar(this, null,
+                android.R.attr.progressBarStyleHorizontal);
+        bar.setMax(100);
+        bar.setVisibility(View.GONE);
+        bar.setProgressTintList(android.content.res.ColorStateList.valueOf(COL_ACCENT));
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(8));
+        blp.topMargin = dp(6);
+        box.addView(bar, blp);
+
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+        buttons.setGravity(Gravity.END);
+        buttons.setPadding(0, dp(14), 0, 0);
+        final TextView action = new TextView(this);
+        action.setTextColor(COL_ACCENT);
+        action.setTextSize(15);
+        action.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        action.setPadding(dp(16), dp(8), dp(8), dp(4));
+        action.setVisibility(View.GONE);
+        TextView close = new TextView(this);
+        close.setText("Close");
+        close.setTextColor(COL_TEXT);
+        close.setTextSize(15);
+        close.setPadding(dp(16), dp(8), dp(4), dp(4));
+        close.setOnClickListener(v -> d.dismiss());
+        buttons.addView(action);
+        buttons.addView(close);
+        box.addView(buttons);
+
+        d.setContentView(box);
+        Window w = d.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+        d.show();
+
+        final java.io.File apkFile = new java.io.File(getCacheDir(), "updates/tubify-update.apk");
+        final String[] pendingUrl = new String[1];
+        final String[] pendingTag = new String[1];
+        final Runnable[] startCheck = new Runnable[1];
+        final Runnable[] startDownload = new Runnable[1];
+
+        startCheck[0] = () -> {
+            status.setText("Checking for updates...");
+            bar.setVisibility(View.GONE);
+            action.setVisibility(View.GONE);
+            String fakeVersion = getIntent().getStringExtra("tubify_fake_version");
+            UpdateChecker.check(fakeVersion != null ? fakeVersion : BuildConfig.VERSION_NAME,
+                    new UpdateChecker.CheckListener() {
+                @Override
+                public void onLatest() {
+                    status.setText("You are on the latest version");
+                }
+
+                @Override
+                public void onUpdate(String tag, String assetName, String assetUrl, long sizeBytes) {
+                    pendingTag[0] = tag;
+                    pendingUrl[0] = assetUrl;
+                    String mb = sizeBytes > 0
+                            ? String.format(java.util.Locale.US, " (%.1f MB)", sizeBytes / 1048576.0)
+                            : "";
+                    status.setText("Update available: " + tag + mb);
+                    action.setText("Download");
+                    action.setVisibility(View.VISIBLE);
+                    action.setOnClickListener(v -> startDownload[0].run());
+                }
+
+                @Override
+                public void onError(String message) {
+                    status.setText("Could not check for updates. Check your connection and try again.");
+                    action.setText("Retry");
+                    action.setVisibility(View.VISIBLE);
+                    action.setOnClickListener(v -> startCheck[0].run());
+                }
+            });
+        };
+
+        startDownload[0] = () -> {
+            status.setText("Downloading " + pendingTag[0] + "...");
+            action.setVisibility(View.GONE);
+            bar.setProgress(0);
+            bar.setVisibility(View.VISIBLE);
+            UpdateChecker.download(pendingUrl[0], apkFile, new UpdateChecker.DownloadListener() {
+                @Override
+                public void onProgress(int percent) {
+                    bar.setProgress(percent);
+                    status.setText("Downloading " + pendingTag[0] + "... " + percent + "%");
+                }
+
+                @Override
+                public void onDone(java.io.File apk) {
+                    bar.setVisibility(View.GONE);
+                    status.setText("Ready to install " + pendingTag[0]);
+                    action.setText("Install");
+                    action.setVisibility(View.VISIBLE);
+                    action.setOnClickListener(v -> {
+                        if (!UpdateChecker.canInstall(MainActivity.this)) {
+                            status.setText("Allow this app to install updates on the next screen, then come back and tap Install again.");
+                            UpdateChecker.openInstallPermission(MainActivity.this);
+                        } else {
+                            UpdateChecker.install(MainActivity.this, apkFile);
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(String message) {
+                    bar.setVisibility(View.GONE);
+                    status.setText("Download failed. Check your connection and try again.");
+                    action.setText("Retry");
+                    action.setVisibility(View.VISIBLE);
+                    action.setOnClickListener(v -> startDownload[0].run());
+                }
+            });
+        };
+
+        startCheck[0].run();
     }
 
 }

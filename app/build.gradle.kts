@@ -10,8 +10,8 @@ android {
         applicationId = "com.tubify.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 57
-        versionName = "0.1.56"
+        versionCode = 58
+        versionName = "0.1.57"
         resourceConfigurations.add("en")
     }
 
@@ -72,5 +72,6 @@ afterEvaluate {
 }
 
 dependencies {
+    implementation("androidx.core:core:1.13.1")
     implementation("org.mozilla.geckoview:geckoview:161.0.20261118180411")
 }
