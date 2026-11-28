@@ -3,7 +3,7 @@
 PKG=$1; APK=$2; OUT=$3; W=$4
 mkdir -p "$OUT"
 adb install -r "$APK" >/dev/null
-adb shell wm size 1080x2160; adb shell wm density 420
+adb shell wm size 720x1440; adb shell wm density 320
 shot(){ adb shell screencap -p /sdcard/s.png; adb pull /sdcard/s.png "$OUT/$1.png" >/dev/null 2>&1; }
 adb shell am start -a android.intent.action.VIEW -d "https://m.youtube.com/results?search_query=quran+recitation" -p $PKG >/dev/null 2>&1; sleep $W; shot 01-search
 adb shell am force-stop $PKG
