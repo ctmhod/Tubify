@@ -63,7 +63,7 @@ jobs:
           set -e
           for f in out/*.apk; do
             base=$(basename "$f")
-            zipalign -f 4 "$f" "aligned-$base"
+            zipalign -f -p 4 "$f" "aligned-$base"
             apksigner sign --ks /tmp/sign/tubify.p12 \
               --ks-pass "pass:$TUBIFY_STORE_PASSWORD" \
               --key-pass "pass:$TUBIFY_KEY_PASSWORD" \
