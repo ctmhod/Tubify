@@ -4,7 +4,7 @@ on:
     inputs:
       new_tag:
         description: Release tag to test
-        default: v0.1.59
+        default: v0.1.60
       old_tag:
         description: Older release tag for the upgrade test
         default: v0.1.56
