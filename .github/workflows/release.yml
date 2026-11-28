@@ -202,7 +202,6 @@ jobs:
           cd out
           SIZES=""
           for f in *.apk; do SIZES="$SIZES $f: $(du -h "$f" | cut -f1)."; done
-          NOTES="Tubify v0.1.60: Launcher icon back to the classic glossy letter tile, in Tubify Full and Tubify Lite. Same features as v0.1.57, including Check for updates in Settings. Requires Android 10+. Sizes:$SIZES Start with the universal APK."
-          gh release view v0.1.60 >/dev/null 2>&1 && gh release delete v0.1.60 --yes || true
+          NOTES="Tubify v0.1.60: Launcher icon back to the classic glossy letter tile, in Tubify Full and Tubify Lite. Same features as v0.1.57, including Check for updates in Settings. Requires Android 10+. Sizes:$SIZES Tubify Lite is listed first; Full builds follow. Each comes in universal, arm64-v8a, armeabi-v7a, x86 and x86_64."
           gh release create v0.1.60 --title "Tubify v0.1.60" --notes "$NOTES" --latest *.apk
           cd ..

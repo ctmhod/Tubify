@@ -62,12 +62,13 @@ Tubify Lite:
 Requires Android 10 (API 29) or newer.
 
 1. Open [Releases](https://github.com/ctmhod/Tubify/releases) and pick the latest version.
-2. Download the right APK (universal is listed first on purpose):
-   - **Tubify-vX.Y.Z-0-universal.apk** - works on every device; large (~237 MB, GeckoView inside)
-   - **Tubify-vX.Y.Z-arm64-v8a.apk** - most phones from the last years (~89 MB; choose this if unsure and short on space)
-   - **Tubify-vX.Y.Z-armeabi-v7a.apk** - older 32-bit phones
-   - **Tubify-vX.Y.Z-x86_64.apk** - emulators and x86 devices
-   - **Tubify-Lite-vX.Y.Z.apk** - the tiny WebView build (~55 KB), works everywhere
+2. Download the right APK (Tubify Lite is listed first, above the Full builds). Every release carries universal, arm64-v8a, armeabi-v7a, x86 and x86_64 APKs for both Lite and Full:
+   - **Tubify-Lite-vX.Y.Z-0-universal.apk** - the tiny WebView build (~170 KB), works everywhere
+   - **Tubify-Lite-vX.Y.Z-arm64-v8a.apk**, **-armeabi-v7a.apk**, **-x86.apk**, **-x86_64.apk** - the same Lite build split per architecture
+   - **Tubify-vX.Y.Z-0-universal.apk** - Full build, works on every device; large (~240 MB, GeckoView inside)
+   - **Tubify-vX.Y.Z-arm64-v8a.apk** - Full build for most phones from the last years (~91 MB; choose this if unsure and short on space)
+   - **Tubify-vX.Y.Z-armeabi-v7a.apk** - Full build for older 32-bit phones
+   - **Tubify-vX.Y.Z-x86.apk** and **Tubify-vX.Y.Z-x86_64.apk** - Full build for x86 devices and emulators
 3. Open the APK and allow "install unknown apps" when Android asks.
 4. Full version: on first run, uBlock Origin installs itself from addons.mozilla.org and the page reloads once. Tap the gear in the YouTube header to set your tweaks.
 
