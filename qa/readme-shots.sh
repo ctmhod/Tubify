@@ -1,12 +1,30 @@
 #!/bin/bash
-# README screenshots. Content rule: search results for Quran recitation only, no music.
+# README screenshots. Content rule: Quran recitation only, no music, nothing immodest.
+# One screenshot per screen. Status bar is cropped later, before committing.
 PKG=$1; APK=$2; OUT=$3; W=$4
 mkdir -p "$OUT"
 adb install -r "$APK" >/dev/null
 adb shell wm size 720x1440; adb shell wm density 320
 shot(){ adb shell screencap -p /sdcard/s.png; adb pull /sdcard/s.png "$OUT/$1.png" >/dev/null 2>&1; }
-adb shell am start -a android.intent.action.VIEW -d "https://m.youtube.com/results?search_query=quran+recitation" -p $PKG >/dev/null 2>&1; sleep $W; shot 01-search
-adb shell am force-stop $PKG
-adb shell am start -a android.intent.action.VIEW -d "https://m.youtube.com/results?search_query=quran+recitation" -p $PKG --ez tubify_open_settings true >/dev/null 2>&1; sleep $W; shot 02-settings
-adb shell input swipe 160 500 160 100 300; sleep 1; shot 03-settings-more
+dump(){ adb shell uiautomator dump /sdcard/u.xml >/dev/null 2>&1; adb pull /sdcard/u.xml "$OUT/cur.xml" >/dev/null 2>&1; }
+tap(){ for i in 1 2 3 4 5; do dump; if P=$(python3 "$(dirname "$0")/tap.py" "$OUT/cur.xml" "$1"); then adb shell input tap $P; sleep 1.5; return 0; fi; adb shell input swipe 160 500 160 250 300; sleep 1; done; return 1; }
+open_url(){ adb shell am force-stop $PKG; adb shell am start -a android.intent.action.VIEW -d "$2" -p $PKG $3 >/dev/null 2>&1; sleep $W; shot "$1"; }
+settings(){ adb shell am force-stop $PKG; adb shell am start -n $PKG/.MainActivity -e tubify_theme dark --ez tubify_open_settings true $2 >/dev/null; sleep $W; }
+
+# --- Browsing (Quran content only) ---
+open_url 01-search "https://m.youtube.com/results?search_query=quran+recitation"
+adb shell input tap 360 520; sleep $W; shot 02-watch
+
+# --- Settings ---
+settings x
+shot 03-settings-blocking
+adb shell input swipe 160 500 160 180 300; sleep 1; shot 04-settings-interface
+adb shell input swipe 160 500 160 180 300; sleep 1; shot 05-settings-about
+tap "Theme"; sleep 1; shot 06-theme-chooser
+adb shell input keyevent 4; sleep 1
+tap "Check for updates"; sleep 12; shot 07-update-latest
+dump; grep -q "You are on the latest version\|Update available\|Checking for updates" "$OUT/cur.xml" && echo "update dialog shown" || echo "WARN update dialog state unknown"
+adb shell input keyevent 4; sleep 1
+tap "Error log"; sleep 2; shot 08-error-log
+adb shell input keyevent 4; sleep 1
 true
