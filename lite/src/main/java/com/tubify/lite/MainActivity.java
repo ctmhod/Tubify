@@ -1417,8 +1417,15 @@ content.addView(sectionLabel("PLAYBACK"));
             bar.setVisibility(View.GONE);
             action.setVisibility(View.GONE);
             String fakeVersion = getIntent().getStringExtra("tubify_fake_version");
-            UpdateChecker.check(fakeVersion != null ? fakeVersion : BuildConfig.VERSION_NAME,
-                    new UpdateChecker.CheckListener() {
+            String current = fakeVersion;
+            if (current == null) {
+                try {
+                    current = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+                } catch (Exception e) {
+                    current = "0";
+                }
+            }
+            UpdateChecker.check(current, new UpdateChecker.CheckListener() {
                 @Override
                 public void onLatest() {
                     status.setText("You are on the latest version");

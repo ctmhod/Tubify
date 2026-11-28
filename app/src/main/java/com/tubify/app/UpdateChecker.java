@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
+import android.provider.Settings;
 import android.os.Looper;
 
 import androidx.core.content.FileProvider;
@@ -28,8 +29,7 @@ public class UpdateChecker {
     private static final String REPO = "ctmhod/Tubify";
     private static final String LATEST_URL = "https://api.github.com/repos/" + REPO + "/releases/latest";
     // Full build APKs are named Tubify-v<ver>-<abi>.apk, Lite is Tubify-Lite-<ver>.apk.
-    private static final String ASSET_PREFIX = BuildConfig.APPLICATION_ID.endsWith(".lite")
-            ? "Tubify-Lite-" : "Tubify-v";
+    private static final String ASSET_PREFIX = "Tubify-v";
 
     public interface CheckListener {
         /** Already on the newest release. */
@@ -88,7 +88,7 @@ public class UpdateChecker {
                             JSONObject a = assets.getJSONObject(i);
                             String n = a.optString("name", "");
                             if (n.startsWith(ASSET_PREFIX) && n.endsWith(".apk")
-                                    && (ASSET_PREFIX.equals("Tubify-Lite-") || n.contains("universal"))) {
+                                    && ("Tubify-Lite-".equals(ASSET_PREFIX) || n.contains("universal"))) {
                                 name = n;
                                 url = a.optString("browser_download_url");
                                 size = a.optLong("size");
