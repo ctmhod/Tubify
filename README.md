@@ -1,5 +1,9 @@
 # Tubify
 
+<p align="center">
+  <img src="docs/icon.png" width="128" alt="Tubify icon">
+</p>
+
 A minimal YouTube client for Android in two flavors. No ads, no Shorts, no suggestions, no comments. Just YouTube.
 
 ## Screenshots
